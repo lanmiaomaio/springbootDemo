@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.example.springbootdemo.mapper.UserMapper">
+
+  <select id="userList" resultType="com.example.springbootdemo.model.User" parameterType="com.example.springbootdemo.model.User">
+
+    SELECT u.id,u.`name`,u.phone,u.age,
+    u.gender,CASE WHEN u.gender='1' THEN '男' ELSE '女' END as genderName,
+    u.birthday,u.address,
+    u.grade,u.create_time as createTime,u.update_time as updateTime
+
+    from user u
+    <where>
+      <if test="user.name!=null and user.name!=''">
+       and u.name=#{user.name}
+      </if>
+
+    </where>
+    order by u.create_time desc,u.update_time desc
+
+
+  </select>
+
+</mapper>

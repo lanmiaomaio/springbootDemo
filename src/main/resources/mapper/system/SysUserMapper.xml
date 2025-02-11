@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.example.springbootdemo.mapper.system.SysUserMapper">
+
+  <select id="userList" resultType="com.example.springbootdemo.model.system.SysUser" parameterType="com.example.springbootdemo.model.system.SysUser">
+
+    SELECT su.id,su.username,
+    su.real_name as realName,su.phone,su.dept_id,d.`name` as deptName,
+    su.position_id,dp.`name` as positionName,
+    su.`status`,CASE WHEN su.`status`='1' THEN '启用' ELSE '禁用' END  as statusName,
+    su.gender,CASE WHEN su.gender='1' THEN '男' ELSE '女' END as genderName,
+    su.image,su.email,su.age,su.create_time as createTime
+
+    from sys_user su
+    left join sys_dictionary d on su.dept_id=d.id
+    left join sys_dictionary dp on su.position_id=dp.id
+    <where>
+      <if test="user.username!=null and user.username!=''">
+       and su.username=#{user.username}
+      </if>
+      <if test="user.realName!=null and user.realName!=''">
+        and su.real_name=#{user.realName}
+      </if>
+
+    </where>
+    order by su.create_time desc
+
+
+  </select>
+
+</mapper>
