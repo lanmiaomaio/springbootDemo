@@ -58,6 +58,7 @@ public class SysMenuController {
     public ResponseBo edit(@RequestBody SysMenu sysMenu){
         int addInt= sysMenuService.edit(sysMenu);
         if(addInt==1){
+
             return ResponseBo.ok();
         }else{
             return ResponseBo.error();
