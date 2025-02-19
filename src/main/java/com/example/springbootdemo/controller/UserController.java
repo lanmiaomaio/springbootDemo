@@ -1,15 +1,20 @@
 package com.example.springbootdemo.controller;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.springbootdemo.common.Log;
 import com.example.springbootdemo.common.pojo.ResponseBo;
+import com.example.springbootdemo.model.Score;
 import com.example.springbootdemo.model.User;
+import com.example.springbootdemo.service.IScoreService;
 import com.example.springbootdemo.service.IUserService;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 ;import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.List;
 
 /**
  * <p>
@@ -25,6 +30,8 @@ public class UserController {
 
     @Autowired
     private IUserService userService;
+    @Autowired
+    private IScoreService scoreService;
     /**
      * 分页
      * @param pageNum
@@ -78,14 +85,16 @@ public class UserController {
      * @return
      */
     @GetMapping("/one")
-    public ResponseBo one(String id){
-        if(StringUtils.isNotBlank(id)){
+    public ResponseBo one(String id) {
+        if (StringUtils.isNotBlank(id)) {
             User one = userService.one(id);
             return ResponseBo.ok(one);
-        }else{
+        } else {
             return ResponseBo.error("查询失败");
         }
     }
+
+
 
     /**
      * 删除
@@ -112,8 +121,8 @@ public class UserController {
      * @return
              */
     @GetMapping("/export")
-    public void export(HttpServletResponse response,@RequestBody User user) throws IOException {
-        userService.exportList(response,user);
+    public void export(String name,HttpServletResponse response) throws IOException {
+        userService.exportList(response,new User().setName(name));
     }
 
 }

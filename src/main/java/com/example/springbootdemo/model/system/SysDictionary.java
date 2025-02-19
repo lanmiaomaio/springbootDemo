@@ -37,7 +37,7 @@ public class SysDictionary extends Model {
     private String name;
 
     /**
-     * 父id
+     * 父id parendId
      */
     private String parentId;
 

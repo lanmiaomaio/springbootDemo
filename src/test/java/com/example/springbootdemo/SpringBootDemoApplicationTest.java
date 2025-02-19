@@ -1,11 +1,19 @@
 package com.example.springbootdemo;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.example.springbootdemo.common.util.MD5Utils;
+import com.example.springbootdemo.model.User;
+import com.example.springbootdemo.model.system.SysRole;
 import com.example.springbootdemo.model.system.SysUser;
+import com.example.springbootdemo.model.system.SysUserRole;
+import com.example.springbootdemo.service.IUserService;
+import com.example.springbootdemo.service.system.ISysRoleService;
+import com.example.springbootdemo.service.system.ISysUserRoleService;
 import com.example.springbootdemo.service.system.ISysUserService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.activiti.engine.*;
+import org.activiti.engine.identity.Group;
 import org.activiti.engine.repository.Model;
 import org.activiti.engine.repository.ProcessDefinition;
 import org.activiti.engine.runtime.ProcessInstance;
@@ -17,13 +25,14 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.ClassPathResource;
 
 import java.io.*;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 @SpringBootTest
 class SpringBootDemoApplicationTest {
 
+	private static final Random random = new Random();
 	@Autowired
 	private RuntimeService runtimeService;
 	@Autowired
@@ -34,6 +43,18 @@ class SpringBootDemoApplicationTest {
 
 	@Autowired
 	private ISysUserService sysUserService;
+
+	@Autowired
+	private IdentityService identityService;
+
+	@Autowired
+	private ISysUserRoleService sysUserRoleService;
+
+	@Autowired
+	private ISysRoleService sysRoleService;
+
+	@Autowired
+	private IUserService userService;
 
 	@Test
 	public void addUser(){
@@ -154,4 +175,116 @@ class SpringBootDemoApplicationTest {
 	}
 
 
+	@Test
+	public void testActiviti(){
+//		LambdaQueryWrapper<SysUser> userLambdaQueryWrapper=new LambdaQueryWrapper<>();
+//		userLambdaQueryWrapper.eq(SysUser::getStatus,"1");
+//		List<SysUser> userList = sysUserService.list(userLambdaQueryWrapper);
+//		userList.stream().forEach(sysUser -> {
+//			User newUser = identityService.newUser(sysUser.getId());
+//			newUser.setFirstName(sysUser.getUsername());
+//			newUser.setLastName(sysUser.getRealName());
+//			identityService.saveUser(newUser);
+//		});
+		List<SysRole> roleList= sysRoleService.list();
+		roleList.stream().forEach(sysRole -> {
+			Group newGroup = identityService.newGroup(sysRole.getId());
+			newGroup.setName(sysRole.getRoleName());
+			identityService.saveGroup(newGroup);
+			LambdaQueryWrapper<SysUserRole> userRoleLambdaQueryWrapper=new LambdaQueryWrapper<>();
+			userRoleLambdaQueryWrapper.eq(SysUserRole::getRoleId,sysRole.getId());
+			List<SysUserRole> userRoleList= sysUserRoleService.list(userRoleLambdaQueryWrapper);
+			userRoleList.stream().forEach(sysUserRole -> {
+				identityService.createMembership(sysUserRole.getUserId(),sysRole.getId());
+			});
+		});
+	}
+
+	@Test
+	public void addUser2() throws ParseException {
+		for (int i=0;i<50;i++){
+			User user=new User();
+			user.setName(getRandomJianTiZH(3));
+			user.setPhone(generatePhoneNumber());
+			Random random1=new Random();
+			String[] gardeOptions = {"0e92f3bdf1c1c4ea9b218e7d910d3773", "28e84277ec1259438be2cdc82410f566","07fd8fa1af58f097c3ebce84f412591a"}; // 定义两个选项
+
+			String[] classOptions =
+					{"872d66c1fdfd5a31e61a3ab8f21b1e51", "062304cf4474acd766ed669d235011cd",
+							"e61431911544f1823e95db7ae4f69921","d388f2f736847c081345ee2d571e7d54",
+							"1457dab8dfebdf3907e15b60bca2f65b","ee4c7226768f29d734ec1679882f1125"}; // 定义两个选项
+
+			String[] genderOptions = {"1", "2"}; // 定义两个选项
+
+			user.setClasss(classOptions[random1.nextInt(classOptions.length)]);
+			user.setGrade(gardeOptions[random1.nextInt(gardeOptions.length)]);
+			user.setGender(genderOptions[random1.nextInt(genderOptions.length)]);
+			user.setAddress(getAddr());
+			user.setAge((int) (Math.random() * 100 + 1));
+			int year=(int)(1970+Math.random()*(2025-1970+1));
+			int month=(int)(1+Math.random()*(12-1+1));;
+			int date=(int)(1+Math.random()*(28-1+1));;;
+			SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+
+			user.setBirthday(sdf.parse(year+"-"+month+"-"+date));
+			userService.add(user);
+		}
+	}
+
+
+	public static String getAddr(){
+		String addrs = "伟刚勇毅俊峰强军平保东文辉力明永健世广志义兴良海山仁波宁贵福生龙元全国胜学祥才发武新利清飞彬富顺信子杰涛昌成康星光天达岩中茂进林有坚和彪博诚先敬震振壮会思群豪心邦承乐绍功松善厚庆磊民友裕河哲江超浩亮政谦亨奇固之轮翰朗伯宏言若鸣朋斌梁栋维启克伦翔旭鹏泽晨辰士以建家致树炎德行时泰盛雄琛钧冠策腾楠榕风航弘华立玉瑞景昊骏泽轩睿逸骏诚石然乐弘伟宇啸天磊瀚文博昊哲瀚冠明辉霖朋健柏鸿涛懿轩烨伟昕磊鹏煊彬益弘文昊强峻熙诚峻豪楠睿祺泰琪霖轩佑擎宇诚昊俊驰松德振豪鹤轩睿诚立绍辉天磊浩然文博昊哲瀚冠霖朋健柏鸿涛懿轩烨伟昕磊鹏煊彬益弘文昊强峻熙诚峻豪楠睿祺泰琪轩佑擎宇诚昊俊驰松德振豪鹤轩睿诚立绍辉昌远涛宇诚材瑾瑜文昊俊驰松德振豪鹤轩睿诚立绍辉天磊浩然文博昊哲瀚冠霖朋健柏鸿涛懿轩烨伟昕磊鹏煊彬益弘文昊强峻熙诚峻豪楠睿祺泰琪轩佑擎宇诚昊俊驰松德振豪鹤轩睿诚立绍辉瀚宇诚材瑾瑜";
+
+		Random random = new Random();
+		String addr = "";
+		for (int i = 0; i < 4; i++) {
+			int index = random.nextInt(300) + 1;
+			String lu = addrs.substring(index, index+1);
+			addr = addr + lu;
+		}
+		addr = addr + "路";
+		int i = random.nextInt(999) + 1;
+		addr = addr + i + "号";
+		return addr;
+	}
+
+
+	// 随机生成手机号码的方法
+	public static String generatePhoneNumber() {
+		Random random = new Random(); // 创建Random对象
+		StringBuilder phoneNumber = new StringBuilder("1"); // 先定义数字"1"
+
+		// 随机生成9位数字
+		for (int i = 0; i < 9; i++) {
+			phoneNumber.append(random.nextInt(10)); // 生成0-9之间的随机数字并添加到phoneNumber中
+		}
+
+		return phoneNumber.toString(); // 将StringBuilder转换为字符串并返回
+	}
+
+	/**
+	 * 自动生成中文名字
+	 * @param len 名字的长度
+	 * @return
+	 */
+	public static String getRandomJianTiZH(int len) {
+		String ret = "";
+		for (int i = 0; i < len; i++) {
+			String str = null;
+			int hightPos, lowPos; // 定义高低位
+			Random random = new Random();
+			hightPos = (176 + Math.abs(random.nextInt(39))); // 获取高位值
+			lowPos = (161 + Math.abs(random.nextInt(93))); // 获取低位值
+			byte[] b = new byte[2];
+			b[0] = (new Integer(hightPos).byteValue());
+			b[1] = (new Integer(lowPos).byteValue());
+			try {
+				str = new String(b, "GBK"); // 转成中文
+			} catch (UnsupportedEncodingException ex) {
+				ex.printStackTrace();
+			}
+			ret += str;
+		}
+		return ret;
+	}
 }

@@ -8,10 +8,13 @@
 
     SELECT u.id,u.`name`,u.phone,u.age,
     u.gender,CASE WHEN u.gender='1' THEN '男' ELSE '女' END as genderName,
-    u.birthday,u.address,
+    u.birthday,u.address,u.classs,d.name as className,d1.name as gradeName,
     u.grade,u.create_time as createTime,u.update_time as updateTime
 
     from user u
+    left join sys_dictionary d on d.id=u.classs
+    left join sys_dictionary d1 on d1.id=u.grade
+
     <where>
       <if test="user.name!=null and user.name!=''">
        and u.name=#{user.name}

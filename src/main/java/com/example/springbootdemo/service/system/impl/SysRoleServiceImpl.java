@@ -12,6 +12,8 @@ import com.example.springbootdemo.service.system.ISysMenuRoleService;
 import com.example.springbootdemo.service.system.ISysMenuService;
 import com.example.springbootdemo.service.system.ISysRoleService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import org.activiti.engine.IdentityService;
+import org.activiti.engine.identity.Group;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,6 +42,9 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
     @Autowired
     private ISysMenuRoleService sysMenuRoleService;
 
+    @Autowired
+    private IdentityService  identityService;
+
     @Override
     public IPage<SysRole> getPage(int pageNum, int pageSize) {
         LambdaQueryWrapper<SysRole> roleLambdaQueryWrapper = new LambdaQueryWrapper<>();
@@ -56,6 +61,9 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
         if(add==0){
             return add;
         }else{
+            Group newGroup = identityService.newGroup(sysRole.getId());
+            newGroup.setName(sysRole.getRoleName());
+            identityService.saveGroup(newGroup);
             for(String menuId: sysRole.getMenuIds()){
                 SysMenuRole sysMenuRole=new SysMenuRole();
                 sysMenuRole.setMenuId(menuId);
@@ -70,6 +78,7 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
     @Transactional
     public int del(String id) {
         int del = baseMapper.deleteById(id);
+        identityService.deleteGroup(id);
         LambdaQueryWrapper<SysMenuRole> menuRoleLambdaQueryWrapper=new LambdaQueryWrapper<>();
         menuRoleLambdaQueryWrapper.eq(SysMenuRole::getRoleId,id);
         sysMenuRoleService.getBaseMapper().delete(menuRoleLambdaQueryWrapper);
@@ -105,6 +114,10 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
         if(edit==0){
             return edit;
         }else{
+            identityService.deleteGroup(sysRole.getId());
+            Group newGroup = identityService.newGroup(sysRole.getId());
+            newGroup.setName(sysRole.getRoleName());
+            identityService.saveGroup(newGroup);
             for(String menuId: sysRole.getMenuIds()){
                 SysMenuRole sysMenuRole=new SysMenuRole();
                 sysMenuRole.setMenuId(menuId);
