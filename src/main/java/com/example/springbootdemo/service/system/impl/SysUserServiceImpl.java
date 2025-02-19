@@ -15,6 +15,8 @@ import com.example.springbootdemo.service.system.ISysRoleService;
 import com.example.springbootdemo.service.system.ISysUserRoleService;
 import com.example.springbootdemo.service.system.ISysUserService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import org.activiti.engine.IdentityService;
+import org.activiti.engine.identity.User;
 import org.activiti.engine.impl.pvm.process.ActivityImpl;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -53,6 +55,9 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
     @Autowired
     private ISysDictionaryService sysDictionaryService;
 
+    @Autowired
+    private IdentityService identityService;
+
     @Override
     public SysUser findByUserName(String userName) {
         LambdaQueryWrapper<SysUser> userLambdaQueryWrapper=new LambdaQueryWrapper<>();
@@ -75,12 +80,26 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         userRoleLambdaQueryWrapper.eq(SysUserRole::getUserId,sysUser.getId());
         sysUserRoleService.getBaseMapper().delete(userRoleLambdaQueryWrapper);
         int i = baseMapper.updateById(sysUser);
+        if(i==1){
+            if(StringUtils.isNotBlank(sysUser.getStatus())&&"1".equals(sysUser.getStatus())){
+                identityService.deleteUser(sysUser.getId());
+                User user = identityService.newUser(sysUser.getId());
+                user.setFirstName(sysUser.getUsername());
+                user.setLastName(sysUser.getRealName());
+                identityService.saveUser(user);
+            }else{
+                identityService.deleteUser(sysUser.getId());
+            }
+        }
         if(sysUser.getRoleIds()!=null){
             for (String roleId:sysUser.getRoleIds()){
                 SysUserRole userRole=new SysUserRole();
                 userRole.setUserId(sysUser.getId());
                 userRole.setRoleId(roleId);
                 sysUserRoleService.save(userRole);
+                if(StringUtils.isNotBlank(sysUser.getStatus())&&"1".equals(sysUser.getStatus())) {
+                    identityService.createMembership(sysUser.getId(),roleId);
+                }
             }
         }
         if(i==0){
@@ -94,11 +113,23 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
     @Transactional
     public boolean add(SysUser sysUser) {
         int insert = baseMapper.insert(sysUser);
+        if(insert==1){
+            if(StringUtils.isNotBlank(sysUser.getStatus())&&"1".equals(sysUser.getStatus())){
+                User user = identityService.newUser(sysUser.getId());
+                user.setFirstName(sysUser.getUsername());
+                user.setLastName(sysUser.getRealName());
+                identityService.saveUser(user);
+            }
+        }
         for (String roleId:sysUser.getRoleIds()){
             SysUserRole userRole=new SysUserRole();
             userRole.setUserId(sysUser.getId());
             userRole.setRoleId(roleId);
             sysUserRoleService.save(userRole);
+            if(StringUtils.isNotBlank(sysUser.getStatus())&&"1".equals(sysUser.getStatus())){
+                identityService.createMembership(sysUser.getId(),roleId);
+
+            }
         }
         if(insert==0){
             return false;
@@ -134,6 +165,12 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
     @Override
     public boolean del(String id) {
         int i = baseMapper.deleteById(id);
+        if(i==1){
+            LambdaQueryWrapper<SysUserRole> userRoleLambdaQueryWrapper=new LambdaQueryWrapper<>();
+            userRoleLambdaQueryWrapper.eq(SysUserRole::getUserId,id);
+            sysUserRoleService.remove(userRoleLambdaQueryWrapper);
+            identityService.deleteUser(id);
+        }
         if(i==0){
             return false;
         }else {

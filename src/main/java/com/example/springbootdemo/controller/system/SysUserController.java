@@ -78,7 +78,7 @@ public class SysUserController {
     @Log(title = "系统管理:修改用户")
     public ResponseBo edit(@RequestBody SysUser sysUser){
         SysDictionary dictionary = sysDictionaryService.getById(sysUser.getPositionId());
-        if("总经理".equals(dictionary.getName())||"部门经理".equals(dictionary.getName())){
+        if(dictionary!=null&&("总经理".equals(dictionary.getName())||"部门经理".equals(dictionary.getName()))){
             LambdaQueryWrapper<SysUser> userLambdaQueryWrapper=new LambdaQueryWrapper<>();
             userLambdaQueryWrapper.ne(SysUser::getId,sysUser.getId());
             userLambdaQueryWrapper.eq(SysUser::getPositionId,dictionary.getId());

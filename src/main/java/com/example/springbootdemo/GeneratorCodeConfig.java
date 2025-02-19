@@ -15,6 +15,7 @@ import java.util.Scanner;
 
 public class GeneratorCodeConfig {
 
+
     public static String scanner(String tip) {
         Scanner scanner = new Scanner(System.in);
         StringBuilder help = new StringBuilder();
@@ -28,31 +29,6 @@ public class GeneratorCodeConfig {
         }
         throw new MybatisPlusException("请输入正确的" + tip + "！");
     }
-
-//    private static void generate() {
-//        FastAutoGenerator.create("jdbc:mysql://localhost:3306/test?serverTimezone=GMT%2b8", "root", "liya123")
-//                .globalConfig(builder -> {
-//                    builder.author("liya") // 设置作者
-//                            .enableSwagger() // 开启 swagger 模式
-//                            .fileOverride() // 覆盖已生成文件
-//                            .outputDir("D:\\project\\springBootDemo\\src\\main\\java\\"); // 指定输出目录
-//                })
-//                .packageConfig(builder -> {
-//                    builder.parent("com.example.springbootdemo") // 设置父包名
-//                            .moduleName("") // 设置父包模块名
-//                            .pathInfo(Collections.singletonMap(OutputFile.mapperXml, "D:\\project\\springBootDemo\\src\\main\\resources\\mapper\\")); // 设置mapperXml生成路径
-//                })
-//                .strategyConfig(builder -> {
-//                    builder.entityBuilder().enableLombok();
-////                    builder.mapperBuilder().enableMapperAnnotation().build();
-//                    builder.controllerBuilder().enableHyphenStyle()  // 开启驼峰转连字符
-//                            .enableRestStyle();  // 开启生成@RestController 控制器
-//                    builder.addInclude("order") // 设置需要生成的表名
-//                            .addTablePrefix("", ""); // 设置过滤表前缀
-//                })
-////                .templateEngine(new FreemarkerTemplateEngine()) // 使用Freemarker引擎模板，默认的是Velocity引擎模板
-//                .execute();
-//    }
 
     public static void main(String[] args) {
 //        generate();
@@ -82,58 +58,16 @@ public class GeneratorCodeConfig {
         PackageConfig pc = new PackageConfig();
 //        pc.setModuleName(scanner("模块名"));
         pc.setParent("com.example.springbootdemo");
-        pc.setEntity("model.system");
-        pc.setMapper("mapper.system");
-        pc.setService("service.system");
-        pc.setServiceImpl("service.system.impl");
-        pc.setController("controller.system");
+        pc.setEntity("model");
+        pc.setMapper("mapper");
+        pc.setService("service");
+        pc.setServiceImpl("service.impl");
+        pc.setController("controller");
         mpg.setPackageInfo(pc);
-
-        // 自定义配置
-//        InjectionConfig cfg = new InjectionConfig() {
-//            @Override
-//            public void initMap() {
-//                // to do nothing
-//            }
-//        };
-
-        // 如果模板引擎是 freemarker
-//        String templatePath = "/templates/mapper.xml.ftl";
-        // 如果模板引擎是 velocity
-        // String templatePath = "/templates/mapper.xml.vm";
-
-        // 自定义输出配置
-//        List<FileOutConfig> focList = new ArrayList<>();
-        // 自定义配置会被优先输出
-//        focList.add(new FileOutConfig(templatePath) {
-//            @Override
-//            public String outputFile(TableInfo tableInfo) {
-//                // 自定义输出文件名 ， 如果你 Entity 设置了前后缀、此处注意 xml 的名称会跟着发生变化！！
-//                return projectPath + "/src/main/resources/mapper/" + pc.getModuleName()
-//                        + "/" + tableInfo.getEntityName() + "Mapper" + StringPool.DOT_XML;
-//            }
-//        });
-        /*
-        cfg.setFileCreate(new IFileCreate() {
-            @Override
-            public boolean isCreate(ConfigBuilder configBuilder, FileType fileType, String filePath) {
-                // 判断自定义文件夹是否需要创建
-                checkDir("调用默认方法创建的目录");
-                return false;
-            }
-        });
-        */
-//        cfg.setFileOutConfigList(focList);
-//        mpg.setCfg(cfg);
 
         // 配置模板
         TemplateConfig templateConfig = new TemplateConfig();
 
-        // 配置自定义输出模板
-        //指定自定义模板路径，注意不要带上.ftl/.vm, 会根据使用的模板引擎自动识别
-        // templateConfig.setEntity("templates/entity2.java");
-        // templateConfig.setService();
-        // templateConfig.setController();
 
         templateConfig.setXml(null);
         mpg.setTemplate(templateConfig);

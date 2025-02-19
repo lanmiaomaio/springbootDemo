@@ -231,8 +231,17 @@ public class LeaveController {
      * 审批历史
      */
     @RequestMapping("/historyApproval")
-    public ResponseBo historyApproval(String processInstanceId) {
-        List<Map> comments = leaveService.historyApproval(processInstanceId);
+    public ResponseBo historyApproval(Integer pageNum,Integer pageSize,String processInstanceId) {
+        IPage<Map> comments = leaveService.historyApproval(pageNum,pageSize,processInstanceId);
         return ResponseBo.ok(comments);
+    }
+
+    /**
+     * 领取任务
+     */
+    @RequestMapping("/receiveTask")
+    public ResponseBo receiveTask(String leaveId,String taskId) {
+        leaveService.receiveTask(leaveId,taskId);
+        return ResponseBo.ok();
     }
 }

@@ -1,6 +1,7 @@
 package com.example.springbootdemo.service;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.springbootdemo.model.Leave;
 import com.baomidou.mybatisplus.extension.service.IService;
 import org.activiti.engine.task.Comment;
@@ -41,6 +42,8 @@ public interface ILeaveService extends IService<Leave> {
 
     void getProcessView(String processInstanceId, HttpServletResponse response) throws Exception;
 
-    List<Map> historyApproval(String processInstanceId);
+    IPage<Map> historyApproval(Integer pageNum,Integer pageSize,String processInstanceId);
+
+    void receiveTask(String leaveId,String taskId);
 
 }

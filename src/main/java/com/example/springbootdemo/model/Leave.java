@@ -81,6 +81,6 @@ public class Leave extends Model {
     private Float day;
 
     @TableField(exist = false)
-    private String isEnd;
+    private String type;
 
 }

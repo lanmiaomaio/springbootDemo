@@ -9,16 +9,10 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.springbootdemo.model.User;
 import com.example.springbootdemo.mapper.UserMapper;
-import com.example.springbootdemo.model.UserExcel;
-import com.example.springbootdemo.model.system.SysRole;
-import com.example.springbootdemo.model.system.SysUser;
-import com.example.springbootdemo.model.system.SysUserExcel;
-import com.example.springbootdemo.model.system.SysUserRole;
+import com.example.springbootdemo.model.excelVo.UserExcel;
 import com.example.springbootdemo.service.IUserService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.springbootdemo.service.system.ISysDictionaryService;
-import com.example.springbootdemo.service.system.ISysRoleService;
-import com.example.springbootdemo.service.system.ISysUserRoleService;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,9 +23,7 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URLEncoder;
-import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -44,6 +36,8 @@ import java.util.stream.Collectors;
 @Service
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IUserService {
 
+    @Autowired
+    private ISysDictionaryService dictionaryService;
 
     @Override
     public User findByUserName(String userName) {
@@ -85,6 +79,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
     @Override
     public User one(String id) {
         User user = baseMapper.selectById(id);
+        if(StringUtils.isNotBlank(user.getGrade())){
+            user.setGradeName(dictionaryService.one(user.getGrade()).getName());
+        }
+        if(StringUtils.isNotBlank(user.getClasss())){
+            user.setClassName(dictionaryService.one(user.getClasss()).getName());
+        }
         return user;
     }
 
@@ -119,7 +119,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
 
         params.setType(ExcelType.HSSF);
 
-        Workbook workbook = ExcelExportUtil.exportExcel(params, SysUserExcel.class, userExcelList);
+        Workbook workbook = ExcelExportUtil.exportExcel(params, UserExcel.class, userExcelList);
         workbook.write(out);
     }
 }

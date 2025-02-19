@@ -11,6 +11,9 @@ import com.example.springbootdemo.model.system.SysUser;
 import com.example.springbootdemo.service.system.ISysDictionaryService;
 import com.example.springbootdemo.service.system.ISysUserService;
 import org.activiti.engine.*;
+import org.activiti.engine.history.HistoricProcessInstance;
+import org.activiti.engine.identity.Group;
+import org.activiti.engine.identity.User;
 import org.activiti.engine.repository.Deployment;
 import org.activiti.engine.repository.ProcessDefinition;
 import org.activiti.engine.task.Task;
@@ -44,10 +47,11 @@ public class SysProcessController {
     private RepositoryService repositoryService;
 
     @Autowired
-    private ISysUserService sysUserService;
+    private IdentityService identityService;
 
     @Autowired
-    private ISysDictionaryService sysDictionaryService;
+    private HistoryService historyService;
+    
 
 
     /**
@@ -111,7 +115,12 @@ public class SysProcessController {
     @RequestMapping("/del")
     @Log(title = "删除流程")
     public ResponseBo del(String id){
-        repositoryService.deleteDeployment(id,true);
+        long count = historyService.createHistoricProcessInstanceQuery().deploymentId(id).count();
+        if(count==0){
+            repositoryService.deleteDeployment(id,true);
+        }else {
+            return ResponseBo.error("当前流程有绑定的流程无法删除");
+        }
         return ResponseBo.ok();
     }
 
@@ -123,20 +132,18 @@ public class SysProcessController {
      */
     @RequestMapping("/getUserList")
     public ResponseBo getUserList(){
-        LambdaQueryWrapper<SysUser> userLambdaQueryWrapper=new LambdaQueryWrapper<>();
-        userLambdaQueryWrapper.eq(SysUser::getStatus,"1").orderByDesc(SysUser::getCreateTime);
-        List<SysUser> list = sysUserService.list(userLambdaQueryWrapper);
-        list.stream().forEach(user->{
-            if(StringUtils.isNotBlank(user.getDeptId())){
-                SysDictionary dictionary = sysDictionaryService.getById(user.getDeptId());
-                user.setDeptName(dictionary.getName());
-            }
-            if(StringUtils.isNotBlank(user.getPositionId())) {
-                SysDictionary dictionary1 = sysDictionaryService.getById(user.getPositionId());
-                user.setPositionName(dictionary1.getName());
-            }
-
-        });
+        List<User> list = identityService.createUserQuery().list();
         return ResponseBo.ok(list);
     }
+
+    /**
+     * 货期角色列表
+     */
+
+    @RequestMapping("/getRoleList")
+    public ResponseBo getRoleList(){
+        List<Group> list = identityService.createGroupQuery().list();
+        return ResponseBo.ok(list);
+    }
+
 }

@@ -1,4 +1,4 @@
-package com.example.springbootdemo.model;
+package com.example.springbootdemo.model.excelVo;
 
 import cn.afterturn.easypoi.excel.annotation.Excel;
 import lombok.Data;
@@ -24,6 +24,12 @@ public class UserExcel {
     @Excel(name = "姓名",width = 15)
     private String name;
 
+    @Excel(name = "年级")
+    private String gradeName;
+
+    @Excel(name = "班级")
+    private String className;
+
 
     @Excel(name = "年龄")
     private Integer age;
@@ -36,6 +42,12 @@ public class UserExcel {
     private String phone;
 
     /**
+     * 性别
+     */
+    @Excel(name = "性别", replace = {"男_1", "女_2"})
+    private String gender;
+
+    /**
      * 生日
      */
     @Excel(name = "生日",format="yyyy-MM-dd",width = 20)
@@ -44,21 +56,9 @@ public class UserExcel {
     /**
      * 地址
      */
-    @Excel(name = "地址")
+    @Excel(name = "地址",width = 20)
     private String address;
 
-    /**
-     * 班级
-     */
-    @Excel(name = "班级")
-    private String grade;
-
-
-    /**
-     * 性别
-     */
-    @Excel(name = "性别", replace = {"男_1", "女_2"})
-    private String gender;
 
 
 

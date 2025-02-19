@@ -29,6 +29,7 @@ public class ShiroConfig {
         filterChainDefinitionMap.put("/logout", "logout");
         filterChainDefinitionMap.put("/login", "anon");
         filterChainDefinitionMap.put("/upload1", "anon");
+        filterChainDefinitionMap.put("/score/importExcel", "anon");
 //        filterChainDefinitionMap.put("/system/menu/page", "anon");
 //        filterChainDefinitionMap.put("/sysUser", "anon");
         filterChainDefinitionMap.put("/**", "authc");

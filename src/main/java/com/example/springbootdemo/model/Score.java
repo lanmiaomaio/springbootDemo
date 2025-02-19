@@ -5,14 +5,11 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.extension.activerecord.Model;
 import java.time.LocalDateTime;
-import java.util.Date;
-
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
-import org.springframework.format.annotation.DateTimeFormat;
 
 /**
  * <p>
@@ -20,72 +17,67 @@ import org.springframework.format.annotation.DateTimeFormat;
  * </p>
  *
  * @author liya test
- * @since 2024-06-06
+ * @since 2025-02-18
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
 @Accessors(chain = true)
-public class User extends Model {
+public class Score extends Model {
 
     private static final long serialVersionUID = 1L;
 
     @TableId(value = "id", type = IdType.UUID)
     private String id;
 
-    /**
-     * 姓名
-     */
-    private String name;
+    private String grade;
+
+    private String classs;
 
     /**
-     * 年龄
+     * 语文
      */
-    private Integer age;
+    private Integer chinese;
 
     /**
-     * 性别
+     * 数学
      */
-    private String gender;
+    private Integer mathematics;
+
+    /**
+     * 英语
+     */
+    private Integer english;
+
+    /**
+     * 理综
+     */
+    private Integer generalScience;
+
+    /**
+     * 总分
+     */
+    private Integer totalScore;
+
+    /**
+     * 学期
+     */
+    private String semester;
 
     @TableField(exist = false)
-    private String genderName;
-
-    /**
-     * 生日
-     */
-    @JsonFormat(shape = JsonFormat.Shape.STRING,pattern="yyyy-MM-dd")
-    private Date birthday;
-
-    /**
-     * 地址
-     */
-    private String address;
-
-    private String phone;
-
-    /**
-     * 年级
-     */
-    private String grade;
+    private String username;
 
     @TableField(exist = false)
     private String gradeName;
 
     @TableField(exist = false)
-    private String className;
+    private String genderName;
 
-    /**
-     * 班级
-     */
-    private String classs;
+
+    private String userId;
 
     @JsonFormat(pattern="yyyy-MM-dd HH:mm:ss")
     @TableField(value = "create_time",fill= FieldFill.INSERT)
     private LocalDateTime createTime;
-
-    @JsonFormat(pattern="yyyy-MM-dd HH:mm:ss")
-    @TableField(value = "update_time",fill= FieldFill.UPDATE)
-    private LocalDateTime updateTime;
 
 
 }
