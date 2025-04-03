@@ -18,7 +18,7 @@ public class JwtUtil {
     @Autowired
     private static ISysUserService sysUserService;
 
-    private static final long EXPIRE_TIME =  60*601000;  //过期时间1小时
+    private static final long EXPIRE_TIME =  60*60*1000;  //过期时间1小时
     //生成token
     public static String getToken(SysUser sysUser) {
         Date date = new Date(System.currentTimeMillis() + EXPIRE_TIME);
