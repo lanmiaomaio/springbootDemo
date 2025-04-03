@@ -18,5 +18,6 @@ public interface SysMenuMapper extends BaseMapper<SysMenu> {
 
     List<SysMenu> selectLeftMenu(@Param("userId") String currentUserId, @Param("parentId") String parentId);
 
+    List<SysMenu> selectPermission(@Param("menuId") String menuId,@Param("userId") String currentUserId);
 
 }

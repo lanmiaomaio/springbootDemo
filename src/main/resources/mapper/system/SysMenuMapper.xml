@@ -28,4 +28,26 @@
 
   </select>
 
+
+  <select id="selectPermission" resultType="com.example.springbootdemo.model.system.SysMenu" parameterType="java.lang.String">
+
+    select DISTINCT sm.id,sm.name,sm.type,sm.permission_identity,sm.parent_id
+
+    from sys_menu sm
+     left JOIN sys_menu_role smr on smr.menu_id=sm.id
+    left join sys_role sr on sr.id=smr.role_id
+     left join sys_user_role sur on sur.role_id=sr.id
+    <where>
+    <if test="userId!=null and userId!=''">
+      and sur.user_id=#{userId}
+    </if>
+      <if test="menuId!=null and menuId!=''">
+        and sm.parent_id=#{menuId}
+      </if>
+      and sm.status='1' and sm.type='2'
+    </where>
+
+
+  </select>
+
 </mapper>

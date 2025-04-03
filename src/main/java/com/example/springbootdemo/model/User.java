@@ -32,10 +32,17 @@ public class User extends Model {
     @TableId(value = "id", type = IdType.UUID)
     private String id;
 
+    @TableField(value = "user_no")
+    private String userNo;
+
     /**
      * 姓名
      */
     private String name;
+
+    @TableField(exist = false)
+    private String username;
+
 
     /**
      * 年龄
@@ -72,12 +79,22 @@ public class User extends Model {
     private String gradeName;
 
     @TableField(exist = false)
+    private String gradeClassName;
+
+    @TableField(exist = false)
     private String className;
+    @TableField(exist = false)
+    private String classCount;
 
     /**
      * 班级
      */
     private String classs;
+
+    private String status;
+
+    @TableField(exist = false)
+    private String statusName;
 
     @JsonFormat(pattern="yyyy-MM-dd HH:mm:ss")
     @TableField(value = "create_time",fill= FieldFill.INSERT)

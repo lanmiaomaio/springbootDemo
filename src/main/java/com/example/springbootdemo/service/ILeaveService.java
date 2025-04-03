@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.springbootdemo.model.Leave;
 import com.baomidou.mybatisplus.extension.service.IService;
+import org.activiti.engine.history.HistoricActivityInstance;
 import org.activiti.engine.task.Comment;
 import org.activiti.engine.task.Task;
 
@@ -36,7 +37,9 @@ public interface ILeaveService extends IService<Leave> {
 
     boolean startActivity(Leave leave);
 
-    IPage<Leave> getTaskPage(int pageNum, int pageSize);
+    IPage<Leave> getTaskPage(int pageNum, int pageSize,String approvalStatus);
+
+    List<HistoricActivityInstance> getHistoryProcessNode(String processInstanceId);
 
     void complete(Leave leave);
 
@@ -45,5 +48,8 @@ public interface ILeaveService extends IService<Leave> {
     IPage<Map> historyApproval(Integer pageNum,Integer pageSize,String processInstanceId);
 
     void receiveTask(String leaveId,String taskId);
+
+    void returnTask(String leaveId,String taskId);
+
 
 }

@@ -3,6 +3,7 @@ package com.example.springbootdemo.controller.system;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.example.springbootdemo.common.ButtonPermission;
 import com.example.springbootdemo.common.Log;
 import com.example.springbootdemo.common.pojo.ResponseBo;
 import com.example.springbootdemo.model.system.SysMenu;
@@ -50,6 +51,7 @@ public class SysRoleController {
      */
     @PostMapping("/add")
     @Log(title = "添加角色")
+    @ButtonPermission(perm = "sys:role:add")
     public ResponseBo add(@RequestBody SysRole sysRole){
         int addInt= sysRoleService.add(sysRole);
         if(addInt==1){
@@ -65,6 +67,7 @@ public class SysRoleController {
      * @return
      */
     @GetMapping("/one")
+    @ButtonPermission(perm = "sys:role:view")
     public ResponseBo one(String id){
         SysRole sysRole= sysRoleService.one(id);
         return ResponseBo.ok(sysRole);
@@ -77,6 +80,7 @@ public class SysRoleController {
      */
     @PostMapping("/edit")
     @Log(title = "修改角色")
+    @ButtonPermission(perm = "sys:role:edit")
     public ResponseBo edit(@RequestBody SysRole sysRole){
         int addInt= sysRoleService.edit(sysRole);
         if(addInt==1){
@@ -94,6 +98,7 @@ public class SysRoleController {
      */
     @GetMapping("/del")
     @Log(title = "删除角色")
+    @ButtonPermission(perm = "sys:role:del")
     public ResponseBo del(String id){
         int delInt= sysRoleService.del(id);
         if(delInt==1){

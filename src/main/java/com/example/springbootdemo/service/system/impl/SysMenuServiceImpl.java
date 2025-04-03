@@ -48,6 +48,21 @@ public class SysMenuServiceImpl extends ServiceImpl<SysMenuMapper, SysMenu> impl
         getChildLeftMenu(currentUserId,sysMenus);
         return sysMenus;
     }
+
+    @Override
+    public List<SysMenu> getButPermission(String menuId) {
+        String currentUserId = JwtUtil.getCurrentUserId();
+        List<SysMenu> sysMenus;
+        if("1".equals(currentUserId)){
+            sysMenus = baseMapper.selectPermission(menuId,null);
+
+        }else{
+            sysMenus = baseMapper.selectPermission(menuId,currentUserId);
+
+        }
+        return sysMenus;
+    }
+
     public List<SysMenu> getChildLeftMenu(String currentUserId,List<SysMenu> sysMenuIList){
         sysMenuIList.stream().forEach(sysMenu -> {
             List<SysMenu> sysMenus;
@@ -56,6 +71,20 @@ public class SysMenuServiceImpl extends ServiceImpl<SysMenuMapper, SysMenu> impl
             }else{
                 sysMenus = baseMapper.selectLeftMenu(currentUserId, sysMenu.getId());
             }
+            if(sysMenus.size()!=0){
+                sysMenu.setChildren(sysMenus);
+                getChildLeftMenu(currentUserId,sysMenus);
+            }
+
+        });
+        return sysMenuIList;
+    }
+
+    public List<SysMenu> getChildMenu(List<SysMenu> sysMenuIList){
+        sysMenuIList.stream().forEach(sysMenu -> {
+            LambdaQueryWrapper<SysMenu> menuLambdaQueryWrapper=new LambdaQueryWrapper<>();
+            menuLambdaQueryWrapper.eq(SysMenu::getParentId,sysMenu.getId()).orderByAsc(SysMenu::getSortBy);
+            List<SysMenu> sysMenus = baseMapper.selectList(menuLambdaQueryWrapper);
             if(sysMenus.size()!=0){
                 sysMenu.setChildren(sysMenus);
                 getChildMenu(sysMenus);
@@ -93,17 +122,4 @@ public class SysMenuServiceImpl extends ServiceImpl<SysMenuMapper, SysMenu> impl
         return sysMenu;
     }
 
-    public List<SysMenu> getChildMenu(List<SysMenu> sysMenuIList){
-        sysMenuIList.stream().forEach(sysMenu -> {
-            LambdaQueryWrapper<SysMenu> menuLambdaQueryWrapper=new LambdaQueryWrapper<>();
-            menuLambdaQueryWrapper.eq(SysMenu::getParentId,sysMenu.getId()).orderByAsc(SysMenu::getSortBy);
-            List<SysMenu> sysMenus = baseMapper.selectList(menuLambdaQueryWrapper);
-            if(sysMenus.size()!=0){
-                sysMenu.setChildren(sysMenus);
-                getChildMenu(sysMenus);
-            }
-
-        });
-        return sysMenuIList;
-    }
 }

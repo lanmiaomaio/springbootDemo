@@ -1,18 +1,8 @@
 package com.example.springbootdemo.model.system;
 
-import cn.afterturn.easypoi.entity.ImageEntity;
 import cn.afterturn.easypoi.excel.annotation.Excel;
-import com.baomidou.mybatisplus.annotation.FieldFill;
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.extension.activerecord.Model;
-import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.experimental.Accessors;
 
-import java.time.LocalDateTime;
 import java.util.Date;
 
 /**
@@ -69,7 +59,7 @@ public class SysUserExcel {
      * 头像
      * 注解中Excel type：1-文本；2-图片；3-函数；10-数字
      */
-//    @Excel(name = "头像", type = 2, width = 10.0, imageType = 2)
+//    @Excel(name = "头像", type = 2, width = 10.0)
 //    private byte[] image;
 
 

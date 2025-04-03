@@ -4,122 +4,425 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 <mapper namespace="com.example.springbootdemo.mapper.ScoreMapper">
 
+    <select id="selectScoreCategoryPage" resultType="com.example.springbootdemo.model.ScoreCategory" parameterType="com.example.springbootdemo.model.ScoreCategory">
+
+        SELECT sc.id,sc.score_category as scoreCategory,dc.name as scoreCategoryName,
+        CASE WHEN sc.semester='1' THEN '第一学期' WHEN sc.semester='2' THEN '第二学期' ELSE '' END as semester,
+        cg.title as grade,cc.title as classs,'1' as type,
+        concat(cg.title, ' ', cc.title) as gradeClassName,
+        sc.score_time,sc.score_time as scoreCreateTime
+        from `score_category` sc
+
+        left join `score_score_category` ssc on sc.id=ssc.score_category_id
+        left join `score` s on s.id=ssc.score_id
+        left join `score_user` su on s.id=su.score_id
+        left join `user` u on u.id=su.user_id
+        left join course cc on cc.id=su.classs
+        left join course cg on cg.id=su.grade
+        left join sys_dictionary dc on dc.id=sc.score_category
+        <where>
+            <if test="score.scoreCategory!=null and score.scoreCategory!=''">
+                and sc.score_category=#{score.scoreCategory}
+            </if>
+
+            <if test="score.scoreTime!=null">
+                and sc.score_time=#{score.scoreTime}
+            </if>
+
+            <if test="score.semester!=null and score.semester!=''">
+                and sc.semester=#{score.semester}
+            </if>
+
+            <if test="score.grade!=null and score.grade!=''">
+                and su.grade=#{score.grade}
+            </if>
+
+            <if test="score.classs!=null and score.classs!=''">
+                and su.classs=#{score.classs}
+            </if>
+
+            <if test="classArray!=null">
+                and su.classs in
+                <foreach item='item' collection='classArray' open='(' separator=',' close=')'>
+                    #{item}
+                </foreach>
+            </if>
+        </where>
+        GROUP BY sc.id,dc.name,sc.semester, cg.title,cc.title
+        order by  sc.create_time desc
+
+    </select>
   <select id="selectPage" resultType="com.example.springbootdemo.model.Score" parameterType="com.example.springbootdemo.model.Score">
+    SELECT s.id,su.user_id as userId,su.`real_name` as username,su.user_no as userNo,dc.name as scoreCategory,
+    CASE WHEN sc.semester='1' THEN '第一学期' WHEN sc.semester='2' THEN '第二学期' ELSE '' END as semester,
+      sc.score_time,CASE WHEN u.gender='1' THEN '男' ELSE '女' END as genderName,
+    cg.id as grade,cc.id as classs,'2' as type,cc.science_humanities_class as scienceHumanitiesClass,
+    concat(cg.title, ' ', cc.title) as gradeClassName, cg.title as gradeName,cc.title as className,
+    s.chinese,s.mathematics,s.english,
+      s.physics,s.chemistry,s.organism,s.science as science,
+      s.history,s.politics,s.geography,s.humanities as humanities,
 
-    SELECT s.id,u.id as userId,u.`name` as username,
-    CASE WHEN s.semester='1' THEN '第一学期' ELSE '第二学期' END as semester,
-    CASE WHEN u.gender='1' THEN '男' ELSE '女' END as genderName,
-    d1.name as grade,d.name as classs,
-    concat(d1.name, ' ', d.name) as gradeName,
-    s.chinese,s.mathematics,s.english,s.general_science as generalScience,
-    s.total_score,s.create_time as createTime
-    from score s
-    left join `user` u on u.id=s.user_id
-    left join sys_dictionary d on d.id=s.classs
-    left join sys_dictionary d1 on d1.id=s.grade
+    s.total_score,s.create_time as createTime,s.create_time as scoreCreateTime
+    from `score` s
+    left join `score_user` su on s.id=su.score_id
+    left join `user` u on u.id=su.user_id
 
+    left join `score_score_category` ssc on s.id=ssc.score_id
+    left join `score_category` sc on sc.id=ssc.score_category_id
+      left join course cc on cc.id=su.classs
+      left join course cg on cg.id=su.grade
+    left join sys_dictionary dc on dc.id=sc.score_category
     <where>
       <if test="score.username!=null and score.username!=''">
-       and u.name=#{score.username}
+       and u.name like concat('%',#{score.username},'%')
       </if>
 
       <if test="score.userId!=null and score.userId!=''">
-        and s.user_id=#{score.userId}
+        and su.user_id=#{score.userId}
       </if>
 
       <if test="score.semester!=null and score.semester!=''">
-        and s.semester=#{score.semester}
+        and sc.semester=#{score.semester}
       </if>
 
       <if test="score.grade!=null and score.grade!=''">
-        and s.grade=#{score.grade}
+        and su.grade=#{score.grade}
       </if>
 
+        <if test="score.scoreCategoryId!=null and score.scoreCategoryId!=''">
+            and sc.id=#{score.scoreCategoryId}
+        </if>
+
+        <if test="score.scoreCategory!=null and score.scoreCategory!=''">
+            and sc.score_category=#{score.scoreCategory}
+        </if>
+
         <if test="score.classs!=null and score.classs!=''">
-            and s.classs=#{score.classs}
+            and su.classs=#{score.classs}
+        </if>
+
+        <if test="classArray!=null">
+            and su.classs in
+            <foreach item='item' collection='classArray' open='(' separator=',' close=')'>
+                #{item}
+            </foreach>
         </if>
 
     </where>
-    order by s.create_time desc
+    order by sc.create_time desc,s.total_score desc,su.user_no asc
   </select>
 
   <select id="gradeStatistics" resultType="com.example.springbootdemo.model.ScoreStatistics" parameterType="com.example.springbootdemo.model.Score">
-      select s.grade as gradeId,d.name as grade,count(DISTINCT s.classs) as classCount,
-      ROUND((count(cso.chinese)/count(uu1.id))*100,0) csoCount,
-      ROUND((count(mso.mathematics)/count(uu1.id))*100,0) as msoCount,
-      ROUND((count(eso.english)/count(uu1.id))*100,0) as esoCount,
-      ROUND((count(gsso.general_science)/count(uu1.id))*100,0) as gssoCount,
+      select u.grade as gradeId,cg.title as grade,
+      <if test="score.scoreCourseList!=null">
 
-      ROUND((count(cst.chinese)/count(uu2.id))*100,0) cstCount,
-      ROUND((count(mst.mathematics)/count(uu2.id))*100,0) as mstCount,
-      ROUND((count(est.english)/count(uu2.id))*100,0) as estCount,
-      ROUND((count(gsst.general_science)/count(uu2.id))*100,0) as gsstCount
+          <foreach item='item' collection='score.scoreCourseList' open='' separator='' close=''>
+              ROUND((count(c${item.code}.${item.code})/count(s.id))*100,0) ${item.code}Count,
+          </foreach>
+      </if>
+
+      count(DISTINCT u.classs) as classCount
+
       from user u
-      left join score s on u.id=s.user_id
-      left join sys_dictionary d on d.id=s.grade
-      left join (select s.* from score s where  s.semester='1') uu1 on uu1.id=s.id
+      left join score_user su on u.id=su.user_id
+      left join (select s.* from score s
+      left join `score_score_category` ssc on s.id=ssc.score_id
+      left join `score_category` sc on sc.id=ssc.score_category_id
+      <where>
+          <if test="score.semester!=null and score.semester!=''">
+              and sc.semester=#{score.semester}
+          </if>
+          <if test="score.scoreCategory!=null and score.scoreCategory!=''">
+              and sc.score_category=#{score.scoreCategory}
+          </if>
 
-      left join (select s.* from score s where s.chinese>90 and s.semester='1') cso on cso.id=s.id
-      left join (select s.* from score s where s.mathematics>90 and s.semester='1') mso on mso.id=s.id
-      left join (select s.* from score s where s.english>90 and s.semester='1') eso on eso.id=s.id
-      left join (select s.* from score s where s.general_science>180 and s.semester='1') gsso on gsso.id=s.id
+          <if test="score.scoreTime!=null">
+              and sc.score_time=#{score.scoreTime}
+          </if>
 
-      left join (select s.* from score s where  s.semester='2') uu2 on uu2.id=s.id
+      </where>
+      )s on s.id=su.score_id
+      left join `score_score_category` ssc on s.id=ssc.score_id
+      left join `score_category` sc on sc.id=ssc.score_category_id
 
-      left join (select s.* from score s where s.chinese>90 and s.semester='2') cst on cst.id=s.id
-      left join (select s.* from score s where s.mathematics>90 and s.semester='2') mst on mst.id=s.id
-      left join (select s.* from score s where s.english>90 and s.semester='2') est on est.id=s.id
-      left join (select s.* from score s where s.general_science>180 and s.semester='2') gsst on gsst.id=s.id
+      left join course cg on cg.id=u.grade
 
-    <where>
-        <if test="score.grade!=null and score.grade!=''">
-            and s.grade=#{score.grade}
-        </if>
+      <if test="score.scoreCourseList!=null">
 
-    </where>
+          <foreach item='item' collection='score.scoreCourseList' open='' separator='' close=''>
+              left join (select s.* from score s
+              left join `score_score_category` ssc on s.id=ssc.score_id
+              left join (select * from `score_category`
+                <where>
+                    <if test="score.semester!=null and score.semester!=''">
+                        and semester=#{score.semester}
+                    </if>
+                    <if test="score.scoreCategory!=null and score.scoreCategory!=''">
+                        and score_category=#{score.scoreCategory}
+                    </if>
 
-    GROUP BY s.grade order by d.name
+                    <if test="score.scoreTime!=null">
+                        and score_time=#{score.scoreTime}
+                    </if>
+                </where>
+              )sc on sc.id=ssc.score_category_id
+              LEFT JOIN score_user suu ON ssc.score_id = suu.score_id
+              left join (select parent_id,total_score from course where code=#{item.code} and type='scoreCourse' and status='1')cs on cs.parent_id=suu.grade
+              where s.${item.code}>=cs.total_score*0.6
+
+              ) c${item.code} on c${item.code}.id=s.id
+          </foreach>
+      </if>
+
+
+      <where>
+            <if test="score.grade!=null and score.grade!=''">
+                and u.grade=#{score.grade}
+            </if>
+
+            <if test="classArray!=null">
+                and u.classs in
+                <foreach item='item' collection='classArray' open='(' separator=',' close=')'>
+                    #{item}
+                </foreach>
+            </if>
+
+
+
+
+      </where>
+
+
+    GROUP BY u.grade order by cg.sort_by asc
 
   </select>
 
-    <select id="classStatistics" resultType="com.example.springbootdemo.model.ScoreStatistics" parameterType="com.example.springbootdemo.model.Score">
-        select s.classs as classsId,d.name as classs,d1.name as grade,count(s.user_id) as userCount,
-        ROUND((count(cso.chinese)/count(uu1.id))*100,0) csoCount,
-        ROUND((count(mso.mathematics)/count(uu1.id))*100,0) as msoCount,
-        ROUND((count(eso.english)/count(uu1.id))*100,0) as esoCount,
-        ROUND((count(gsso.general_science)/count(uu1.id))*100,0) as gssoCount,
 
-        ROUND((count(cst.chinese)/count(uu2.id))*100,0) cstCount,
-        ROUND((count(mst.mathematics)/count(uu2.id))*100,0) as mstCount,
-        ROUND((count(est.english)/count(uu2.id))*100,0) as estCount,
-        ROUND((count(gsst.general_science)/count(uu2.id))*100,0) as gsstCount
+    <select id="gradeStatistics1" resultType="com.example.springbootdemo.model.ScoreStatistics" parameterType="com.example.springbootdemo.model.Score">
+        select u.grade as gradeId,cg.title as grade,
+
+        <foreach item='item' collection='score.scoreCategoryList' open='' separator='' close=''>
+            count(DISTINCT category${item.sortBy}.id) as category${item.sortBy}Count,
+        </foreach>
+
+        count(DISTINCT u.classs) as classCount
+
         from user u
-        left join score s on u.id=s.user_id
-        left join sys_dictionary d on d.id=s.classs
-        left join sys_dictionary d1 on d1.id=s.grade
+        left join score_user su on u.id=su.user_id
+        left join score s on s.id=su.score_id
+        left join `score_score_category` ssc on s.id=ssc.score_id
+        left join `score_category` sc on sc.id=ssc.score_category_id
+        left join course cg on cg.id=u.grade
 
-        left join (select s.* from score s where  s.semester='1') uu1 on uu1.id=s.id
+        <if test="score.scoreCategoryList!=null">
 
-        left join (select s.* from score s where s.chinese>90 and s.semester='1') cso on cso.id=s.id
-        left join (select s.* from score s where s.mathematics>90 and s.semester='1') mso on mso.id=s.id
-        left join (select s.* from score s where s.english>90 and s.semester='1') eso on eso.id=s.id
-        left join (select s.* from score s where s.general_science>180 and s.semester='1') gsso on gsso.id=s.id
+            <foreach item='item' collection='score.scoreCategoryList' open='' separator='' close=''>
+                LEFT JOIN (SELECT sc.* from `score_category` sc
+                where sc.score_category=#{item.id})category${item.sortBy} on category${item.sortBy}.id=sc.id
 
-        left join (select s.* from score s where  s.semester='2') uu2 on uu2.id=s.id
+            </foreach>
+        </if>
 
-        left join (select s.* from score s where s.chinese>90 and s.semester='2') cst on cst.id=s.id
-        left join (select s.* from score s where s.mathematics>90 and s.semester='2') mst on mst.id=s.id
-        left join (select s.* from score s where s.english>90 and s.semester='2') est on est.id=s.id
-        left join (select s.* from score s where s.general_science>180 and s.semester='2') gsst on gsst.id=s.id
 
         <where>
             <if test="score.grade!=null and score.grade!=''">
-                and s.grade=#{score.grade}
+                and u.grade=#{score.grade}
             </if>
 
+            <if test="classArray!=null">
+                and u.classs in
+                <foreach item='item' collection='classArray' open='(' separator=',' close=')'>
+                    #{item}
+                </foreach>
+            </if>
+
+
         </where>
-        GROUP BY s.grade,s.classs
-        ORDER BY d1.name,d.name
+
+        GROUP BY u.grade order by cg.sort_by asc
+
+    </select>
+
+
+    <select id="classStatistics" resultType="com.example.springbootdemo.model.ScoreStatistics" parameterType="com.example.springbootdemo.model.Score">
+        select u.classs as classsId,cc.title as classs,cg.title as grade,u.grade AS gradeId,
+
+        <foreach item='item' collection='score.scoreCategoryList' open='' separator='' close=''>
+            count(DISTINCT category${item.sortBy}.id) as category${item.sortBy}Count,
+        </foreach>
+
+        count(DISTINCT u.id) as userCount
+
+        from user u
+        left join score_user su on u.id=su.user_id
+        left join score s on s.id=su.score_id
+        left join `score_score_category` ssc on s.id=ssc.score_id
+        left join `score_category` sc on sc.id=ssc.score_category_id
+        left join course cg on cg.id=u.grade
+        left join course cc on cc.id=u.classs
+
+        <if test="score.scoreCategoryList!=null">
+
+            <foreach item='item' collection='score.scoreCategoryList' open='' separator='' close=''>
+                LEFT JOIN (SELECT sc.* from `score_category` sc
+                where sc.score_category=#{item.id})category${item.sortBy} on category${item.sortBy}.id=sc.id
+
+            </foreach>
+        </if>
+
+
+        <where>
+            <if test="score.grade!=null and score.grade!=''">
+                and u.grade=#{score.grade}
+            </if>
+
+            <if test="classArray!=null">
+                and u.classs in
+                <foreach item='item' collection='classArray' open='(' separator=',' close=')'>
+                    #{item}
+                </foreach>
+            </if>
+
+
+        </where>
+
+        group by u.classs,cg.title
+        ORDER BY cg.sort_by asc,cc.sort_by asc
+    </select>
+
+
+    <select id="classDetailStatistics" resultType="com.example.springbootdemo.model.ScoreStatistics" parameterType="com.example.springbootdemo.model.Score">
+        select u.grade AS gradeId,
+        cg.title AS grade,u.classs as classsId,cc.title as classs,sc.id as categoryId,dsc.`name` as categoryName,
+        CASE WHEN sc.semester='1' THEN '第一学期' when sc.semester='2' THEN '第二学期' ELSE '' END as semester,
+        sc.semester as semesterId,
+        <if test="score.scoreCourseList!=null">
+
+            <foreach item='item' collection='score.scoreCourseList' open='' separator='' close=''>
+                ROUND((count(c${item.code}.${item.code})/count(s.id))*100,0) ${item.code}Count,
+            </foreach>
+        </if>
+
+        count(DISTINCT u.id) as userCount
+
+        from `score_category` sc
+        left join `score_score_category` ssc on sc.id=ssc.score_category_id
+
+        left join (select s.id from score s
+
+        left join `score_score_category` ssc on s.id=ssc.score_id
+        )s on s.id=ssc.score_id
+
+
+        left join score_user su on s.id=su.score_id
+        left join user u on u.id=su.user_id
+
+        left join course cg on cg.id=u.grade
+        left join course cc on cc.id=u.classs
+        LEFT JOIN sys_dictionary dsc ON dsc.id = sc.score_category
+
+
+        <if test="score.scoreCourseList!=null">
+
+
+            <foreach item='item' collection='score.scoreCourseList' open='' separator='' close=''>
+                left join (select s.id, s.${item.code}  from score s
+                        LEFT JOIN score_user suu ON s.id = suu.score_id
+                        left join (select parent_id,total_score from course where code=#{item.code} and type='scoreCourse' and status='1')cs on cs.parent_id=suu.grade
+                        where s.${item.code}>=cs.total_score*0.6
+
+                ) c${item.code} on c${item.code}.id=s.id
+            </foreach>
+        </if>
+
+        <where>
+            <if test="score.grade!=null and score.grade!=''">
+                and u.grade=#{score.grade}
+            </if>
+
+            <if test="score.classs!=null and score.classs!=''">
+                and u.classs=#{score.classs}
+            </if>
+
+            <if test="score.scoreCategory!=null and score.scoreCategory!=''">
+                and sc.score_category=#{score.scoreCategory}
+            </if>
+
+
+            <if test="classArray!=null">
+                and u.classs in
+                <foreach item='item' collection='classArray' open='(' separator=',' close=')'>
+                    #{item}
+                </foreach>
+            </if>
+
+
+        </where>
+        GROUP BY u.grade,u.classs,sc.id,sc.semester
+        ORDER BY cg.sort_by asc,cc.sort_by asc,sc.score_time desc
+    </select>
+
+
+    <select id="selectStatisticsDetail" resultType="com.example.springbootdemo.model.Score" parameterType="com.example.springbootdemo.model.Score">
+        SELECT u.id as userId,su.`real_name` as username,su.user_no,u.age,u.phone,
+        CASE WHEN sc.semester='1' THEN '第一学期' when sc.semester='2' THEN '第二学期' ELSE '' END as semester,
+        CASE WHEN u.gender='1' THEN '男' ELSE '女' END as genderName,
+        cg.title as grade,cc.title as classs,
+        concat(cg.title, ' ', cc.title) as gradeClassName,
+        s.chinese,s.mathematics,s.english,
+        s.physics,s.chemistry,s.organism,s.science as science,
+        s.history,s.politics,s.geography,s.humanities as humanities,
+        s.total_score,s.create_time as createTime,u.create_time as userCreateTime
+        from score s
+        left join `score_user` su on s.id=su.score_id
+        left join `user` u on u.id=su.user_id
+        left join `score_score_category` ssc on s.id=ssc.score_id
+        left join `score_category` sc on sc.id=ssc.score_category_id
+        left join course cg on cg.id=u.grade
+        left join course cc on cc.id=u.classs
+
+
+        <where>
+
+            <if test="score.scoreCategoryId!=null and score.scoreCategoryId!=''">
+                and sc.id=#{score.scoreCategoryId}
+            </if>
+
+            <if test="score.scoreCategory!=null and score.scoreCategory!=''">
+                and sc.score_category=#{score.scoreCategory}
+            </if>
+
+            <if test="score.grade!=null and score.grade!=''">
+                and su.grade=#{score.grade}
+            </if>
+
+            <if test="score.classs!=null and score.classs!=''">
+                and su.classs=#{score.classs}
+            </if>
+            <if test="classArray!=null">
+                and su.classs in
+                <foreach item='item' collection='classArray' open='(' separator=',' close=')'>
+                    #{item}
+                </foreach>
+            </if>
+
+            <if test="score.isPass!=null and score.isPass!=''">
+                <choose>
+                    <when test="score.isPass eq 1">
+
+                        and s.${score.type}&gt;= (select total_score from course where parent_id=#{score.grade} and code=#{score.type} and type='scoreCourse' and status='1')*0.6
+                    </when>
+                    <otherwise>
+                        and s.${score.type}&lt;(select total_score from course where parent_id=#{score.grade} and code=#{score.type} and type='scoreCourse' and status='1')*0.6
+                    </otherwise>
+                </choose>
+            </if>
+
+
+        </where>
+
+
+        order by cg.sort_by asc,cc.sort_by asc,s.total_score desc,su.user_no asc
     </select>
 
 </mapper>

@@ -3,6 +3,7 @@ package com.example.springbootdemo.controller.system;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.example.springbootdemo.common.ButtonPermission;
 import com.example.springbootdemo.common.Log;
 import com.example.springbootdemo.common.pojo.ResponseBo;
 import com.example.springbootdemo.common.util.MD5Utils;
@@ -56,10 +57,11 @@ public class SysUserController {
      * @return
      */
     @PostMapping("/add")
+    @ButtonPermission(perm = "sys:user:add")
     @Log(title = "系统管理:添加用户")
     public ResponseBo add(@RequestBody SysUser sysUser){
         sysUser.setPassword("123456");
-        sysUser.setPassword(MD5Utils.encrypt(sysUser.getUsername(),sysUser.getPassword()));
+        sysUser.setPassword(MD5Utils.encrypt(sysUser.getPassword()));
         boolean save = sysUserService.add(sysUser);
         if(save){
             return ResponseBo.ok("添加成功");
@@ -75,6 +77,7 @@ public class SysUserController {
      * @return
      */
     @PostMapping("/edit")
+    @ButtonPermission(perm = "sys:user:edit")
     @Log(title = "系统管理:修改用户")
     public ResponseBo edit(@RequestBody SysUser sysUser){
         SysDictionary dictionary = sysDictionaryService.getById(sysUser.getPositionId());
@@ -89,7 +92,7 @@ public class SysUserController {
             }
         }
         if(StringUtils.isNotBlank(sysUser.getPassword())){
-            sysUser.setPassword(MD5Utils.encrypt(sysUser.getUsername(),sysUser.getPassword()));
+            sysUser.setPassword(MD5Utils.encrypt(sysUser.getPassword()));
         }
         boolean save = sysUserService.edit(sysUser);
         if(save){
@@ -105,6 +108,7 @@ public class SysUserController {
      * @return
      */
     @GetMapping("/one")
+//    @ButtonPermission(perm = "sys:user:view")
     public ResponseBo one(String id){
         if(StringUtils.isNotBlank(id)){
             SysUser one = sysUserService.one(id);
@@ -140,6 +144,7 @@ public class SysUserController {
      * @return
      */
     @GetMapping("/export")
+    @ButtonPermission(perm = "sys:user:export")
     public void export(HttpServletResponse response) throws IOException {
         SysUser sysUser=new SysUser();
          sysUserService.exportList(response,sysUser);

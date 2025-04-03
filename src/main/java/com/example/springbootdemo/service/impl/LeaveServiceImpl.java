@@ -8,8 +8,10 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.springbootdemo.common.JwtUtil;
+import com.example.springbootdemo.mapper.system.SysUserRoleMapper;
 import com.example.springbootdemo.model.Leave;
 import com.example.springbootdemo.mapper.LeaveMapper;
+import com.example.springbootdemo.model.Project;
 import com.example.springbootdemo.model.system.SysDictionary;
 import com.example.springbootdemo.model.system.SysUser;
 import com.example.springbootdemo.model.system.SysUserRole;
@@ -19,23 +21,28 @@ import com.example.springbootdemo.service.system.ISysDictionaryService;
 import com.example.springbootdemo.service.system.ISysUserRoleService;
 import com.example.springbootdemo.service.system.ISysUserService;
 import com.fasterxml.jackson.databind.util.BeanUtil;
-import org.activiti.bpmn.model.BpmnModel;
-import org.activiti.bpmn.model.FlowNode;
-import org.activiti.bpmn.model.SequenceFlow;
+import org.activiti.bpmn.model.*;
+import org.activiti.bpmn.model.Process;
 import org.activiti.engine.*;
-import org.activiti.engine.history.HistoricActivityInstance;
-import org.activiti.engine.history.HistoricProcessInstance;
-import org.activiti.engine.history.HistoricTaskInstance;
+import org.activiti.engine.history.*;
+import org.activiti.engine.impl.RepositoryServiceImpl;
 import org.activiti.engine.impl.cfg.ProcessEngineConfigurationImpl;
 import org.activiti.engine.impl.context.Context;
 import org.activiti.engine.impl.identity.Authentication;
 import org.activiti.engine.impl.persistence.entity.ProcessDefinitionEntity;
+import org.activiti.engine.impl.pvm.PvmActivity;
 import org.activiti.engine.impl.pvm.PvmTransition;
 import org.activiti.engine.impl.pvm.process.ActivityImpl;
+import org.activiti.engine.impl.pvm.process.ProcessDefinitionImpl;
+import org.activiti.engine.impl.pvm.process.TransitionImpl;
 import org.activiti.engine.repository.ProcessDefinition;
+import org.activiti.engine.runtime.Execution;
+import org.activiti.engine.runtime.ExecutionQuery;
 import org.activiti.engine.runtime.ProcessInstance;
 import org.activiti.engine.task.Comment;
+import org.activiti.engine.task.IdentityLink;
 import org.activiti.engine.task.Task;
+import org.activiti.engine.task.TaskInfo;
 import org.activiti.image.ProcessDiagramGenerator;
 import org.activiti.spring.ProcessEngineFactoryBean;
 import org.apache.commons.lang3.StringUtils;
@@ -46,10 +53,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.*;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -78,8 +82,6 @@ public class LeaveServiceImpl extends ServiceImpl<LeaveMapper, Leave> implements
     @Autowired
     private HistoryService historyService;
 
-    @Autowired
-    private ISysDictionaryService dictionaryService;
 
     @Autowired
     ProcessEngineConfiguration processEngineConfiguration;
@@ -87,31 +89,37 @@ public class LeaveServiceImpl extends ServiceImpl<LeaveMapper, Leave> implements
     ProcessEngineFactoryBean processEngine;
 
     @Autowired
-    private IdentityService identityService;
+    private SysUserRoleMapper sysUserRoleMapper;
 
     @Autowired
-    ISysUserRoleService sysUserRoleService;
+    private ISysDictionaryService sysDictionaryService;
 
     @Override
     public IPage<Leave> getPage(int pageNum, int pageSize,String val) {
         LambdaQueryWrapper<Leave> leaveLambdaQueryWrapper = new LambdaQueryWrapper<>();
-        if(StringUtils.isNotBlank(val)){
-            String currentUserId = JwtUtil.getCurrentUserId();
-            leaveLambdaQueryWrapper.eq(Leave::getApprovalUserId,currentUserId).eq(Leave::getProcessStatus,"1");
+        String currentUserId = JwtUtil.getCurrentUserId();
+        if(!"1".equals(currentUserId)){
+            leaveLambdaQueryWrapper.eq(Leave::getUserId,currentUserId);
+
         }
         leaveLambdaQueryWrapper.orderByDesc(Leave::getCreateTime);
         IPage<Leave> page=new Page<>(pageNum,pageSize);
         baseMapper.selectPage(page, leaveLambdaQueryWrapper);
         page.getRecords().stream().forEach(leave -> {
+            if (StringUtils.isNotBlank(leave.getLeaveCategory())) {
+                SysDictionary dictionary = sysDictionaryService.getById(leave.getLeaveCategory());
+                leave.setLeaveCategoryName(dictionary.getName());
+            }
             SysUser sysUser = sysUserService.getBaseMapper().selectById(leave.getUserId());
             leave.setUserName(sysUser.getRealName());
             if(StringUtils.isNotBlank(leave.getApprovalUserId())){
-                SysUser sysUser1 = sysUserService.getBaseMapper().selectById(leave.getApprovalUserId());
-                leave.setApprovalUserName(sysUser1.getRealName());
+                String names = sysUserService.selectNameBatchIds(leave.getApprovalUserId().split(","));
+                leave.setApprovalUserName(names);
             }
             ProcessDefinition processDefinition = repositoryService.createProcessDefinitionQuery().processDefinitionId(leave.getProcessDeptId()).singleResult();
             if(processDefinition!=null){
                 leave.setProcessDeptName(processDefinition.getName());
+                leave.setSuspended(processDefinition.isSuspended());
             }
         });
         return page;
@@ -158,72 +166,133 @@ public class LeaveServiceImpl extends ServiceImpl<LeaveMapper, Leave> implements
         if(processDefinition!=null){
             leave.setProcessDeptName(processDefinition.getName());
         }
+
+        if(StringUtils.isNotBlank(leave.getLeaveCategory())){
+            SysDictionary dictionary = sysDictionaryService.getById(leave.getLeaveCategory());
+            leave.setLeaveCategoryName(dictionary.getName());
+        }
         return leave;
     }
 
     @Override
-//    @Transactional
+    @Transactional
     public boolean startActivity(Leave leave) {
         Map<String,Object> map=new HashMap<>();
         LambdaUpdateWrapper<Leave> leaveLambdaUpdateWrapper=new LambdaUpdateWrapper<>();
+        Authentication.setAuthenticatedUserId(JwtUtil.getCurrentUserId());
+        JSONObject jsonObject=new JSONObject();
+        jsonObject.put("reason",leave.getReason());
+        jsonObject.put("examineStatus","");
         if(!"3".equals(leave.getProcessStatus())){
             map.put("leaveId",leave.getId());
+            map.put("day",leave.getDay());
+            List<String> signList = new ArrayList<>();
+            signList.add("fe350d87afde04ae9b20cde87f0b6cd5");
+            signList.add("ffc7d22ec17b1f2903ee11870ef40dc9");
+            signList.add("0f886b3b0b662248421546a7ab0f7132");
+            map.put("datas",signList);
+            map.put("data","c058d7466af60c76b1021d4525c69d5a");
+
             ProcessInstance processInstance = runtimeService.startProcessInstanceById(leave.getProcessDeptId(), map);
             Task task = taskService.createTaskQuery().processInstanceId(processInstance.getProcessInstanceId()).singleResult();
+            taskService.addComment(task.getId(),task.getProcessInstanceId(),"请假管理提交审批",jsonObject.toJSONString());
+            taskService.complete(task.getId());
             leaveLambdaUpdateWrapper.eq(Leave::getId,leave.getId());
             leaveLambdaUpdateWrapper.set(Leave::getProcessInstanceId,processInstance.getProcessInstanceId());
             leaveLambdaUpdateWrapper.set(Leave::getProcessStatus,"1");
-            leaveLambdaUpdateWrapper.set(Leave::getApprovalUserId,task.getAssignee());
+            List<Task> list = taskService.createTaskQuery().processInstanceId(processInstance.getProcessInstanceId()).list();
+
+            List<String> collect = list.stream().filter(task1 -> StringUtils.isNotBlank(task1.getAssignee())).map(Task::getAssignee).collect(Collectors.toList());
+            leaveLambdaUpdateWrapper.set(Leave::getApprovalUserId,String.join(",", collect));
+
             baseMapper.update(new Leave(), leaveLambdaUpdateWrapper);
         }else{
+
             Task task = taskService.createTaskQuery().processInstanceId(leave.getProcessInstanceId()).singleResult();
+            taskService.addComment(task.getId(),task.getProcessInstanceId(),"请假管理提交审批",jsonObject.toJSONString());
+            taskService.complete(task.getId());
             leaveLambdaUpdateWrapper.eq(Leave::getId,leave.getId());
             leaveLambdaUpdateWrapper.set(Leave::getProcessStatus,"1");
-            leaveLambdaUpdateWrapper.set(Leave::getApprovalUserId,task.getAssignee());
+            List<Task> list = taskService.createTaskQuery().processInstanceId(task.getProcessInstanceId()).list();
+            List<String> collect = list.stream().filter(task1 -> StringUtils.isNotBlank(task1.getAssignee())).map(Task::getAssignee).collect(Collectors.toList());
+            leaveLambdaUpdateWrapper.set(Leave::getApprovalUserId,String.join(",", collect));
             baseMapper.update(new Leave(), leaveLambdaUpdateWrapper);
         }
         return true;
     }
 
     @Override
-    public IPage<Leave> getTaskPage(int pageNum, int pageSize) {
+    public IPage<Leave> getTaskPage(int pageNum, int pageSize,String approvalStatus) {
         String currentUserId = JwtUtil.getCurrentUserId();
         List<Leave> leaveList1=new ArrayList<>();
-        List<Task> taskList = taskService.createTaskQuery().taskAssignee(currentUserId).orderByTaskCreateTime().desc().list();
+        if("1".equals(approvalStatus)){
+            List<Task> taskList = taskService.createTaskQuery().taskAssignee(currentUserId).orderByTaskCreateTime().desc().list();
 
-        taskList.stream().forEach(task -> {task.setCategory("assignee");});
-        List<Task> taskCandidateUserList = taskService.createTaskQuery().taskCandidateUser(currentUserId).orderByTaskCreateTime().desc().list();
-        taskCandidateUserList.stream().forEach(task -> {task.setCategory("candidateUserGroup");});
+            List<Task> taskCandidateUserList = taskService.createTaskQuery().taskCandidateUser(currentUserId).orderByTaskCreateTime().desc().list();
 
-//        LambdaQueryWrapper<SysUserRole> userRoleLambdaQueryWrapper=new LambdaQueryWrapper<>();
-//        userRoleLambdaQueryWrapper.eq(SysUserRole::getUserId,currentUserId);
-//        List<SysUserRole> list = sysUserRoleService.list(userRoleLambdaQueryWrapper);
-//        List<String> ids = list.stream().map(SysUserRole::getRoleId).collect(Collectors.toList());
-//        List<Task> taskCandidateGroupList = taskService.createTaskQuery().taskCandidateGroupIn(ids).orderByTaskCreateTime().desc().list();
-//        taskCandidateGroupList.stream().forEach(task -> {task.setCategory("candidateGroup");});
-        taskList.addAll(taskCandidateUserList);
-//        taskList.addAll(taskCandidateGroupList);
-        taskList.stream().forEach(task -> {
-            LambdaQueryWrapper<Leave> leaveLambdaQueryWrapper=new LambdaQueryWrapper<>();
-            leaveLambdaQueryWrapper.eq(Leave::getProcessInstanceId,task.getProcessInstanceId());
-            Leave leave = baseMapper.selectOne(leaveLambdaQueryWrapper);
-            if(leave!=null){
-                if(!"3".equals(leave.getProcessStatus())){
+            taskList.addAll(taskCandidateUserList);
+
+            taskList.stream().forEach(task -> {
+                LambdaQueryWrapper<Leave> leaveLambdaQueryWrapper=new LambdaQueryWrapper<>();
+                leaveLambdaQueryWrapper.eq(Leave::getProcessInstanceId,task.getProcessInstanceId());
+                Leave leave = baseMapper.selectOne(leaveLambdaQueryWrapper);
+                if(leave!=null){
                     leave.setTaskId(task.getId());
                     SysUser sysUser = sysUserService.getBaseMapper().selectById(leave.getUserId());
                     leave.setUserName(sysUser.getRealName());
                     if(StringUtils.isNotBlank(task.getAssignee())){
+                        leave.setApprovalUserId(task.getAssignee());
                         leave.setApprovalUserName(sysUserService.getBaseMapper().selectById(task.getAssignee()).getRealName());
+                    }
+                    if(StringUtils.isNotBlank(leave.getLeaveCategory())){
+                        SysDictionary dictionary = sysDictionaryService.getById(leave.getLeaveCategory());
+                        leave.setLeaveCategoryName(dictionary.getName());
                     }
                     ProcessDefinition processDefinition = repositoryService.createProcessDefinitionQuery().processDefinitionId(leave.getProcessDeptId()).singleResult();
                     if(processDefinition!=null){
                         leave.setProcessDeptName(processDefinition.getName());
+                        leave.setSuspended(processDefinition.isSuspended());
+                        BpmnModel bpmnModel = repositoryService.getBpmnModel(processDefinition.getId());
+                        UserTask userTask = (UserTask)bpmnModel.getFlowElement(task.getTaskDefinitionKey());
+                        if(userTask.getCandidateGroups().size()>0){
+                            leave.setType("3");
+                        }else if(userTask.getCandidateUsers().size()>0){
+                            leave.setType("2");
+                        }else{
+                            leave.setType("1");
+                        }
                     }
-                    leave.setType(task.getCategory());
+                    leaveList1.add(leave);
+
+                }
+            });
+        }else{
+            List<HistoricTaskInstance> list = historyService.createHistoricTaskInstanceQuery().taskAssignee(currentUserId).finished().orderByTaskCreateTime().desc().list();
+            Set<String> processInstanceIds = list.stream().filter(historicTaskInstance -> historicTaskInstance.getEndTime()!=null).map(TaskInfo::getProcessInstanceId).collect(Collectors.toSet());
+            processInstanceIds.stream().forEach(processInstanceId -> {
+                LambdaQueryWrapper<Leave> leaveLambdaQueryWrapper=new LambdaQueryWrapper<>();
+                leaveLambdaQueryWrapper.eq(Leave::getProcessInstanceId,processInstanceId);
+                Leave leave = baseMapper.selectOne(leaveLambdaQueryWrapper);
+                if(leave!=null){
+                    SysUser sysUser = sysUserService.getBaseMapper().selectById(leave.getUserId());
+                    leave.setUserName(sysUser.getRealName());
+                    if(StringUtils.isNotBlank(leave.getApprovalUserId())){
+                        leave.setApprovalUserName(sysUserService.getBaseMapper().selectById(leave.getApprovalUserId()).getRealName());
+                    }
+                    if(StringUtils.isNotBlank(leave.getLeaveCategory())){
+                        SysDictionary dictionary = sysDictionaryService.getById(leave.getLeaveCategory());
+                        leave.setLeaveCategoryName(dictionary.getName());
+                    }
+                    ProcessDefinition processDefinition = repositoryService.createProcessDefinitionQuery().processDefinitionId(leave.getProcessDeptId()).singleResult();
+                    if(processDefinition!=null){
+                        leave.setProcessDeptName(processDefinition.getName());
+                        leave.setSuspended(processDefinition.isSuspended());
+                    }
                     leaveList1.add(leave);
                 }
-            }
-        });
+            });
+        }
+
         int startResult = (pageNum - 1) * pageSize;
         List<Leave> leaveList=leaveList1.subList(startResult,Math.min(startResult + pageSize, leaveList1.size()));
         IPage<Leave> page=new Page<>();
@@ -233,54 +302,172 @@ public class LeaveServiceImpl extends ServiceImpl<LeaveMapper, Leave> implements
     }
 
     @Override
+    public List<HistoricActivityInstance> getHistoryProcessNode(String processInstanceId){
+        List<HistoricActivityInstance> historicActivities = historyService
+                .createHistoricActivityInstanceQuery()
+                .processInstanceId(processInstanceId)
+                .activityType("userTask")
+                .orderByHistoricActivityInstanceStartTime().asc()
+                .list();
+        List<HistoricActivityInstance> activityInstances = new ArrayList<>();
+        List<String> activityIds=new ArrayList<>();
+        List<Task> taskList = taskService.createTaskQuery().processInstanceId(processInstanceId).list();
+        for (int i=0;i<historicActivities.size();i++){
+            if(historicActivities.get(i).getActivityId().equals(taskList.get(0).getTaskDefinitionKey())){
+                break;
+            }else if(historicActivities.get(i).getEndTime()!=null){
+                if(!activityIds.contains(historicActivities.get(i).getActivityId())){
+                    activityIds.add(historicActivities.get(i).getActivityId());
+                    activityInstances.add(historicActivities.get(i));
+                }
+
+            }
+        }
+        return activityInstances;
+    }
+
+    @Override
     @Transactional
     public void complete(Leave leave) {
         Map<String,Object> map=new HashMap<>();
         Leave leave1 = baseMapper.selectById(leave.getId());
-        Task task = taskService.createTaskQuery().processInstanceId(leave.getProcessInstanceId()).singleResult();
+        Task task = taskService.createTaskQuery().taskId(leave.getTaskId()).singleResult();
         if("2".equals(leave.getProcessStatus())){
             map.put("day",leave1.getDay());
-            map.put("isAgree",true);
+            map.put("pass",true);
             Authentication.setAuthenticatedUserId(JwtUtil.getCurrentUserId());
             JSONObject jsonObject=new JSONObject();
             jsonObject.put("reason",leave.getReason());
             jsonObject.put("examineStatus",leave.getProcessStatus());
-            taskService.addComment(task.getId(),leave.getProcessInstanceId(),"请假管理审批",jsonObject.toJSONString());
+            Execution execution = runtimeService.createExecutionQuery().executionId(task.getExecutionId()).singleResult();
+
+            // 获取 nrOfInstances 和 nrOfCompletedInstances
+            Integer nrOfInstances = (Integer) runtimeService.getVariable(execution.getId(), "nrOfInstances");
+            Integer nrOfCompletedInstances = (Integer) runtimeService.getVariable(execution.getId(), "nrOfCompletedInstances");
+            if(nrOfInstances!=null){
+                map.put("nrOfCompletedInstances",nrOfCompletedInstances);
+                map.put("nrOfInstances",nrOfInstances);
+            }
+            taskService.addComment(task.getId(),leave1.getProcessInstanceId(),"请假管理审批同意",jsonObject.toJSONString());
             taskService.complete(task.getId(),map);
 
-            Task runTask = taskService.createTaskQuery().processInstanceId(leave.getProcessInstanceId()).singleResult();
-            if(runTask==null){
+            List<Task> runTask = taskService.createTaskQuery().processInstanceId(leave1.getProcessInstanceId()).list();
+            if(runTask.size()==0){
                 LambdaUpdateWrapper<Leave> leaveLambdaUpdateWrapper=new LambdaUpdateWrapper<>();
                 leaveLambdaUpdateWrapper.eq(Leave::getId,leave.getId());
                 leaveLambdaUpdateWrapper.set(Leave::getProcessStatus,"2");
                 leaveLambdaUpdateWrapper.set(Leave::getApprovalUserId,null);
+
                 baseMapper.update(new Leave(),leaveLambdaUpdateWrapper);
             }else{
                 LambdaUpdateWrapper<Leave> leaveLambdaUpdateWrapper=new LambdaUpdateWrapper<>();
                 leaveLambdaUpdateWrapper.eq(Leave::getId,leave.getId());
-                leaveLambdaUpdateWrapper.set(Leave::getProcessInstanceId,runTask.getProcessInstanceId());
-                leaveLambdaUpdateWrapper.set(Leave::getApprovalUserId,runTask.getAssignee());
+                List<Task> list = taskService.createTaskQuery().processInstanceId(task.getProcessInstanceId()).list();
+                List<String> collect = list.stream().filter(task1 -> StringUtils.isNotBlank(task1.getAssignee())).map(Task::getAssignee).collect(Collectors.toList());
+                leaveLambdaUpdateWrapper.set(Leave::getApprovalUserId,String.join(",", collect));
                 baseMapper.update(new Leave(),leaveLambdaUpdateWrapper);
             }
         }else{
             //驳回
-            map.put("isAgree",false);
-            map.put("day",null);
+            map.put("pass",false);
             Authentication.setAuthenticatedUserId(JwtUtil.getCurrentUserId());
             JSONObject jsonObject=new JSONObject();
             jsonObject.put("reason",leave.getReason());
             jsonObject.put("examineStatus",leave.getProcessStatus());
-            taskService.addComment(task.getId(),leave.getProcessInstanceId(),"请假管理审批",jsonObject.toJSONString());
-            taskService.complete(task.getId(),map);
+            jsonObject.put("activityNode",leave.getTargetNodeId());
+            taskService.addComment(task.getId(),leave1.getProcessInstanceId(),"请假管理审批驳回",jsonObject.toJSONString());
+            rejectToNode(task.getId(),leave.getTargetNodeId());
             LambdaUpdateWrapper<Leave> leaveLambdaUpdateWrapper=new LambdaUpdateWrapper<>();
             leaveLambdaUpdateWrapper.eq(Leave::getId,leave.getId());
             leaveLambdaUpdateWrapper.set(Leave::getProcessStatus,"3");
             leaveLambdaUpdateWrapper.set(Leave::getApprovalUserId,null);
             baseMapper.update(new Leave(),leaveLambdaUpdateWrapper);
-//            taskService.deleteTask(leave.getTaskId(),false);
 
         }
     }
+
+    /**
+     * 驳回
+     */
+    public void rejectToNode(String taskId,String targetNodeId) {
+        try {
+            Map<String, Object> variables;
+            // 取得当前任务.当前任务节点
+            HistoricTaskInstance currTask = historyService
+                    .createHistoricTaskInstanceQuery().taskId(taskId)
+                    .singleResult();
+            // 取得流程实例，流程实例
+            ProcessInstance instance = runtimeService
+                    .createProcessInstanceQuery()
+                    .processInstanceId(currTask.getProcessInstanceId())
+                    .singleResult();
+            if (instance != null) {
+                variables = instance.getProcessVariables();
+                // 取得流程定义
+                ProcessDefinitionEntity definition = (ProcessDefinitionEntity) ((RepositoryServiceImpl) repositoryService)
+                        .getDeployedProcessDefinition(currTask
+                                .getProcessDefinitionId());
+                if (definition != null) {
+                    //取得当前活动节点
+                    ActivityImpl currActivity = ((ProcessDefinitionImpl) definition)
+                            .findActivity(currTask.getTaskDefinitionKey());
+
+                    // 取得上一步活动
+                    //也就是节点间的连线
+                    //获取来源节点的关系
+                    List<PvmTransition> nextTransitionList = currActivity.getIncomingTransitions();
+
+                    // 清除当前活动的出口
+                    List<PvmTransition> oriPvmTransitionList = new ArrayList<PvmTransition>();
+                    //新建一个节点连线关系集合
+                    //获取出口节点的关系
+                    List<PvmTransition> pvmTransitionList = currActivity
+                            .getOutgoingTransitions();
+                    //
+                    for (PvmTransition pvmTransition : pvmTransitionList) {
+                        oriPvmTransitionList.add(pvmTransition);
+                    }
+                    pvmTransitionList.clear();
+
+                    // 建立新出口
+                    List<TransitionImpl> newTransitions = new ArrayList<TransitionImpl>();
+//                    for (PvmTransition nextTransition : nextTransitionList) {
+//                        PvmActivity nextActivity = nextTransition.getSource();
+
+                        //destTaskkey
+                        ActivityImpl nextActivityImpl = ((ProcessDefinitionImpl) definition)
+                                // .findActivity(nextActivity.getId());
+                                .findActivity(targetNodeId);
+                        TransitionImpl newTransition = currActivity
+                                .createOutgoingTransition();
+                        newTransition.setDestination(nextActivityImpl);
+                        newTransitions.add(newTransition);
+//                    }
+                    // 完成任务
+                    List<Task> tasks = taskService.createTaskQuery()
+                            .processInstanceId(instance.getId())
+                            .taskDefinitionKey(currTask.getTaskDefinitionKey()).list();
+                    for (Task task : tasks) {
+                        taskService.complete(task.getId(), variables);
+//                        historyService.deleteHistoricTaskInstance(task.getId());
+                    }
+                    // 恢复方向
+                    for (TransitionImpl transitionImpl : newTransitions) {
+                        currActivity.getOutgoingTransitions().remove(transitionImpl);
+                    }
+                    for (PvmTransition pvmTransition : oriPvmTransitionList) {
+
+                        pvmTransitionList.add(pvmTransition);
+                    }
+
+                }
+            }
+
+        } catch (Exception e) {
+
+        }
+    }
+
     @Override
     public IPage<Map> historyApproval(Integer pageNum,Integer pageSize,String processInstanceId) {
         List<Comment> processInstanceComments = taskService.getProcessInstanceComments(processInstanceId);
@@ -293,9 +480,25 @@ public class LeaveServiceImpl extends ServiceImpl<LeaveMapper, Leave> implements
             Map map1=JSON.parseObject(map.get("message").toString(),Map.class);
             map.put("reason",map1.get("reason"));
             map.put("examineStatus",map1.get("examineStatus"));
+            if("6".equals(map1.get("examineStatus"))){
+                SysUser selectById = sysUserService.getBaseMapper().selectById(map1.get("approvalUserId").toString());
+                map.put("approvalUserName",selectById.getRealName());
+            }
+            if("3".equals(map1.get("examineStatus"))){
+                if(map1.get("activityNode")!=null){
+                    List<HistoricActivityInstance> activityInstances = historyService.createHistoricActivityInstanceQuery().processInstanceId(processInstanceId).activityId(map1.get("activityNode").toString()).list();
+                    map.put("activityNode",activityInstances.get(0).getActivityName());
+                }else{
+                    map.put("activityNode","");
+                }
+            }
             SysUser sysUser = sysUserService.getBaseMapper().selectById(comment.getUserId());
             HistoricTaskInstance historicTaskInstance = historyService.createHistoricTaskInstanceQuery().taskId(comment.getTaskId()).singleResult();
-            map.put("name",sysUser.getRealName());
+            if(sysUser==null){
+                map.put("name","");
+            }else{
+                map.put("name",sysUser.getRealName());
+            }
             map.put("activitiName",historicTaskInstance.getName());
             map.put("time", DateFormatUtils.format(comment.getTime(),"yyy-MM-dd HH:mm:ss"));
             list.add(map);
@@ -307,14 +510,38 @@ public class LeaveServiceImpl extends ServiceImpl<LeaveMapper, Leave> implements
     }
 
     @Override
+    @Transactional
     public void receiveTask(String leaveId,String taskId) {
         String userId=JwtUtil.getCurrentUserId();
+        Authentication.setAuthenticatedUserId(JwtUtil.getCurrentUserId());
+        JSONObject jsonObject=new JSONObject();
+        jsonObject.put("reason","");
+        jsonObject.put("examineStatus","4");
+        Leave leave = baseMapper.selectById(leaveId);
+        taskService.addComment(taskId,leave.getProcessInstanceId(),"请假管理领取",jsonObject.toJSONString());
+
         taskService.claim(taskId,userId);
         LambdaUpdateWrapper<Leave> leaveLambdaUpdateWrapper=new LambdaUpdateWrapper<>();
         leaveLambdaUpdateWrapper.eq(Leave::getId,leaveId);
         leaveLambdaUpdateWrapper.set(Leave::getApprovalUserId,userId);
         baseMapper.update(new Leave(),leaveLambdaUpdateWrapper);
     }
+
+    @Override
+    public void returnTask(String leaveId,String taskId) {
+        Authentication.setAuthenticatedUserId(JwtUtil.getCurrentUserId());
+        JSONObject jsonObject=new JSONObject();
+        jsonObject.put("reason","");
+        jsonObject.put("examineStatus","5");
+        Leave leave = baseMapper.selectById(leaveId);
+        taskService.addComment(taskId,leave.getProcessInstanceId(),"请假管理退回",jsonObject.toJSONString());
+        taskService.unclaim(taskId);
+        LambdaUpdateWrapper<Leave> leaveLambdaUpdateWrapper=new LambdaUpdateWrapper<>();
+        leaveLambdaUpdateWrapper.eq(Leave::getId,leaveId);
+        leaveLambdaUpdateWrapper.set(Leave::getApprovalUserId,null);
+        baseMapper.update(new Leave(),leaveLambdaUpdateWrapper);
+    }
+
 
     /**
      * 流程图跟踪
@@ -327,7 +554,7 @@ public class LeaveServiceImpl extends ServiceImpl<LeaveMapper, Leave> implements
         //获取流程图
         BpmnModel bpmnModel = repositoryService.getBpmnModel(processInstance.getProcessDefinitionId());
         processEngineConfiguration = processEngine.getProcessEngineConfiguration();
-        Context.setProcessEngineConfiguration((ProcessEngineConfigurationImpl) processEngineConfiguration);
+//        Context.setProcessEngineConfiguration((ProcessEngineConfigurationImpl) processEngineConfiguration);
 
         ProcessDiagramGenerator diagramGenerator = processEngineConfiguration.getProcessDiagramGenerator();
 
@@ -336,10 +563,10 @@ public class LeaveServiceImpl extends ServiceImpl<LeaveMapper, Leave> implements
         //当前审批流程
         try{
             List<String> activeActivityIds = runtimeService.getActiveActivityIds(processInstanceId);
-            imageStream = diagramGenerator.generateDiagram(bpmnModel, "png", activeActivityIds,new ArrayList<>(),"宋体","宋体",null,null,1.0);
+            imageStream = diagramGenerator.generateDiagram(bpmnModel, "png", activeActivityIds,new ArrayList<>(),"宋体","微软雅黑","黑体",null,1.0);
 
         }catch (Exception e){
-            imageStream = diagramGenerator.generateDiagram(bpmnModel, "png", new ArrayList<>(),new ArrayList<>(),"宋体","宋体",null,null,1.0);
+            imageStream = diagramGenerator.generateDiagram(bpmnModel, "png", new ArrayList<>(),new ArrayList<>(),"宋体","微软雅黑","黑体",null,1.0);
 
         }
 

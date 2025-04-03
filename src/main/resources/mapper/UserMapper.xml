@@ -6,24 +6,76 @@
 
   <select id="userList" resultType="com.example.springbootdemo.model.User" parameterType="com.example.springbootdemo.model.User">
 
-    SELECT u.id,u.`name`,u.phone,u.age,
+    SELECT u.id,u.`name`,u.`name` as username,u.phone,u.age,u.user_no as userNo,
+    u.`status`,ds.name  as statusName,
     u.gender,CASE WHEN u.gender='1' THEN '男' ELSE '女' END as genderName,
-    u.birthday,u.address,u.classs,d.name as className,d1.name as gradeName,
-    u.grade,u.create_time as createTime,u.update_time as updateTime
+    u.birthday,u.address,u.grade,u.classs,cc.title as className,cg.title as gradeName,
+    concat(cg.title, ' ', cc.title) as gradeClassName,
+    u.create_time as createTime,u.update_time as updateTime
 
     from user u
-    left join sys_dictionary d on d.id=u.classs
-    left join sys_dictionary d1 on d1.id=u.grade
-
+    left join course cg on cg.id=u.grade
+    left join course cc on cc.id=u.classs
+    left join sys_dictionary ds on ds.id=u.status
     <where>
+
       <if test="user.name!=null and user.name!=''">
-       and u.name=#{user.name}
+       and u.name like concat('%',#{user.name},'%')
+      </if>
+
+      <if test="user.grade!=null and user.grade!=''">
+        and u.grade=#{user.grade}
+      </if>
+
+      <if test="user.classs!=null and user.classs!=''">
+        and u.classs=#{user.classs}
+      </if>
+
+      <if test="user.status!=null and user.status!=''">
+        and u.status=#{user.status}
+      </if>
+
+      <if test="classArray!=null">
+        and u.classs in
+        <foreach item='item' collection='classArray' open='(' separator=',' close=')'>
+          #{item}
+        </foreach>
       </if>
 
     </where>
-    order by u.create_time desc,u.update_time desc
+    order by cg.sort_by asc,cc.sort_by asc,u.create_time desc
 
 
+  </select>
+
+  <select id="selectMaxUserNo" resultType="java.lang.String" parameterType="java.lang.String">
+
+    select SUBSTRING(max(u.user_no), 8)  from user u
+
+    where u.user_no like concat('%',#{userNo},'%')
+  </select>
+
+  <select id="userStatistics" resultType="java.util.Map" parameterType="com.example.springbootdemo.model.User">
+    SELECT uu.gradeName,group_concat(uu.className SEPARATOR ',') as className,
+           group_concat(uu.classCount SEPARATOR ',') as classCount
+    from(
+     SELECT cg.title as gradeName,cc.title as className,count(u.classs) as classCount,
+    cg.sort_by as dgs,cc.sort_by as dcs from `user` u
+    left join course cg on cg.id=u.grade
+    left join course cc on cc.id=u.classs
+    where u.`status`='be4521e9b35b81ffc52eee3b9eff01c4'
+
+    <if test="classArray!=null">
+      and u.classs in
+      <foreach item='item' collection='classArray' open='(' separator=',' close=')'>
+        #{item}
+      </foreach>
+    </if>
+    GROUP BY cg.title,cc.title,cg.sort_by,cc.sort_by
+    ORDER BY cg.sort_by asc,cc.sort_by asc
+    )uu
+    GROUP BY uu.gradeName,uu.dgs
+    ORDER BY uu.dgs
   </select>
 
 </mapper>

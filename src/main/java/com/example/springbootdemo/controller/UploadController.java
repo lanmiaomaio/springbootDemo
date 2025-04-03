@@ -1,7 +1,10 @@
 package com.example.springbootdemo.controller;
 
 import com.example.springbootdemo.common.pojo.ResponseBo;
+import com.example.springbootdemo.model.ProjectFile;
+import com.example.springbootdemo.service.IProjectFileService;
 import org.apache.commons.io.IOUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -10,13 +13,15 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletResponse;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
+import java.io.*;
+import java.net.URL;
+import java.net.URLEncoder;
 
 @RestController
 public class UploadController {
+
+    @Autowired
+    private IProjectFileService projectFileService;
 
     @PostMapping("/upload")
     public ResponseBo upload(MultipartFile file) {
@@ -81,6 +86,28 @@ public class UploadController {
         }
     }
 
+    @GetMapping("/download1/{id}")
+    public void download1 (@PathVariable("id") String id,HttpServletResponse response) throws IOException {
+         ProjectFile projectFile = projectFileService.getById(id);
+
+        //输入流，通过输入流读取文件内容
+        try {
+            response.setContentType("application/octet-stream");
+            response.setHeader("Content-Disposition",
+                    "attachment;filename=" + encodeFileName(projectFile.getFileName()));
+            OutputStream out = response.getOutputStream();
+            out.write(projectFile.getFileUrl());
+            out.flush();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    // 处理中文文件名编码问题‌:ml-citation{ref="8" data="citationList"}
+    private String encodeFileName(String name) throws UnsupportedEncodingException {
+        return new String(name.getBytes("GBK"), "ISO-8859-1");
+    }
 
     /**
      * 上传获取文件流

@@ -3,6 +3,7 @@ package com.example.springbootdemo.controller.system;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.example.springbootdemo.common.ButtonPermission;
 import com.example.springbootdemo.common.Log;
 import com.example.springbootdemo.common.pojo.ResponseBo;
 import com.example.springbootdemo.model.system.SysDictionary;
@@ -49,6 +50,7 @@ public class SysDictionaryController {
      */
     @PostMapping("/add")
     @Log(title = "添加数据字典")
+    @ButtonPermission(perm = "sys:dictionary:add")
     public ResponseBo add(@RequestBody SysDictionary sysDictionary){
         int addInt= sysDictionaryService.add(sysDictionary);
         if(addInt==1){
@@ -64,6 +66,7 @@ public class SysDictionaryController {
      * @return
      */
     @GetMapping("/one")
+    @ButtonPermission(perm = "sys:dictionary:view")
     public ResponseBo one(String id){
         SysDictionary sysDictionary= sysDictionaryService.one(id);
         return ResponseBo.ok(sysDictionary);
@@ -76,11 +79,11 @@ public class SysDictionaryController {
      */
     @PostMapping("/edit")
     @Log(title = "修改数据字典")
+    @ButtonPermission(perm = "sys:dictionary:edit")
     public ResponseBo edit(@RequestBody SysDictionary sysDictionary){
-        SysDictionary dictionary = sysDictionaryService.getById(sysDictionary.getId());
         int addInt= sysDictionaryService.edit(sysDictionary);
         if(addInt==1){
-            return ResponseBo.ok(dictionary);
+            return ResponseBo.ok();
         }else{
             return ResponseBo.error();
         }
@@ -94,11 +97,11 @@ public class SysDictionaryController {
      */
     @GetMapping("/del")
     @Log(title = "删除数据字典")
+    @ButtonPermission(perm = "sys:dictionary:del")
     public ResponseBo del(String id){
-        SysDictionary dictionary = sysDictionaryService.getById(id);
         int delInt= sysDictionaryService.del(id);
         if(delInt==1){
-            return ResponseBo.ok(dictionary);
+            return ResponseBo.ok();
         }else{
             return ResponseBo.error();
         }
@@ -127,4 +130,18 @@ public class SysDictionaryController {
         List<SysDictionary> list= sysDictionaryService.list(dictionaryLambdaQueryWrapper);
         return ResponseBo.ok(list);
     }
+
+    /**
+     * 通过code查询
+     * @param id
+     * @return
+     */
+    @GetMapping("/getDictionaryByParentId")
+    public ResponseBo getDictionaryByParentId(String id){
+        LambdaQueryWrapper<SysDictionary> dictionaryLambdaQueryWrapper=new LambdaQueryWrapper<>();
+        dictionaryLambdaQueryWrapper.eq(SysDictionary::getParentId,id).orderByAsc(SysDictionary::getSortBy);
+        List<SysDictionary> list= sysDictionaryService.list(dictionaryLambdaQueryWrapper);
+        return ResponseBo.ok(list);
+    }
+
 }

@@ -18,6 +18,8 @@ import java.util.Date;
 public class UserExcel {
 
 
+    @Excel(name = "学号",width = 20)
+    private String userNo;
     /**
      * 姓名
      */
@@ -51,7 +53,7 @@ public class UserExcel {
      * 生日
      */
     @Excel(name = "生日",format="yyyy-MM-dd",width = 20)
-    private LocalDateTime birthday;
+    private Date birthday;
 
     /**
      * 地址

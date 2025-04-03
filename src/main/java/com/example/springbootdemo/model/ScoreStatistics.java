@@ -18,24 +18,35 @@ public class ScoreStatistics extends Model {
 
     private String grade;
 
+    private String semesterId;
+
+    private String semester;
+
     private int classCount;
 
     private int userCount;
 
-    private int csoCount;
+    private int chineseCount;
+    private int mathematicsCount;
+    private int englishCount;
 
-    private int msoCount;
+    private int physicsCount;
+    private int chemistryCount;
+    private int organismCount;
 
-    private int esoCount;
+    private int historyCount;
+    private int politicsCount;
+    private int geographyCount;
 
-    private int gssoCount;
+    private int scienceCount;
+    private int humanitiesCount;
 
-    private int cstCount;
 
-    private int mstCount;
+    private int category1Count;
+    private int category2Count;
+    private int category3Count;
+    private int category4Count;
 
-    private int estCount;
-
-    private int gsstCount;
-
+    private String categoryId;
+    private String categoryName;
 }

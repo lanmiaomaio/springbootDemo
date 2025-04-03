@@ -2,12 +2,14 @@ package com.example.springbootdemo.model;
 
 import com.baomidou.mybatisplus.annotation.*;
 import com.baomidou.mybatisplus.extension.activerecord.Model;
-import java.time.LocalDateTime;
-
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 
 /**
  * <p>
@@ -20,26 +22,19 @@ import lombok.experimental.Accessors;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @Accessors(chain = true)
-@TableName("`leave`")
-public class Leave extends Model {
+@TableName("`project`")
+public class Project extends Model {
 
     private static final long serialVersionUID = 1L;
 
     @TableId(value = "id", type = IdType.UUID)
     private String id;
 
+    private String name;
     /**
      * 流程实例id
      */
     private String processDeptId;
-
-    /**
-     * 请假类型
-     */
-    private String leaveCategory;
-
-    @TableField(exist = false)
-    private String leaveCategoryName;
 
     /**
      * 申请人用户id
@@ -95,6 +90,9 @@ public class Leave extends Model {
     private boolean suspended;
 
     @TableField(exist = false)
-    private String targetNodeId;
+    private String[] countersignApprovals;
+
+    @TableField(exist = false)
+    private List<ProjectFile> projectFileList;
 
 }

@@ -93,6 +93,7 @@ public class SysDictionaryServiceImpl extends ServiceImpl<SysDictionaryMapper, S
         return mapList1;
     }
 
+
     public List<Map<String, Object>> childDictionary(List<Map<String,Object>> list){
         list.stream().forEach(map -> {
             LambdaQueryWrapper<SysDictionary> dictionaryLambdaQueryWrapper = new LambdaQueryWrapper<>();
@@ -104,6 +105,9 @@ public class SysDictionaryServiceImpl extends ServiceImpl<SysDictionaryMapper, S
                 Map<String, Object> objectMap = new HashMap<>();
                 objectMap.put("label", dictionary.getName());
                 objectMap.put("value", dictionary.getId());
+                objectMap.put("code", dictionary.getCode());
+                objectMap.put("parentId", dictionary.getParentId());
+                objectMap.put("parentName", map.get("label"));
                 mapList1.add(objectMap);
             });
             if(sysDictionaryList.size()!=0){

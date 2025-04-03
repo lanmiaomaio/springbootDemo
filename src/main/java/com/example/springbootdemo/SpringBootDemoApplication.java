@@ -12,7 +12,7 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 @MapperScan("com.example.springbootdemo.mapper")
 @EnableTransactionManagement
 @ServletComponentScan
-@EnableRabbit
+//@EnableRabbit
 public class SpringBootDemoApplication {
 
 	public static void main(String[] args) {

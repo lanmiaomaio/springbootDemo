@@ -3,8 +3,10 @@ package com.example.springbootdemo.service;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.example.springbootdemo.model.Score;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.example.springbootdemo.model.ScoreCategory;
 import com.example.springbootdemo.model.ScoreStatistics;
 import com.example.springbootdemo.model.User;
+import org.apache.ibatis.annotations.Param;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
@@ -21,7 +23,7 @@ import java.util.List;
  */
 public interface IScoreService extends IService<Score> {
 
-  IPage<Score> getPage(int pageNum, int pageSize, Score score);
+  IPage<ScoreCategory> getPage(int pageNum, int pageSize, Score score);
 
   List<User> getList();
 
@@ -31,7 +33,7 @@ public interface IScoreService extends IService<Score> {
 
   Score one(String id);
 
-  boolean del(String id);
+  boolean del(String id,String type);
 
 
   void importList(MultipartFile file, Score score) throws Exception;
@@ -41,5 +43,10 @@ public interface IScoreService extends IService<Score> {
   List<ScoreStatistics> gradeStatistics(Score score);
 
   List<ScoreStatistics> classStatisticsList(Score score);
+
+  List<ScoreStatistics> classDetailStatisticsList(Score score);
+
+  IPage<Score> selectStatisticsDetailPage(int pageNum, int pageSize, Score score);
+
 
 }

@@ -1,12 +1,16 @@
 package com.example.springbootdemo.service;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.example.springbootdemo.model.Score;
 import com.example.springbootdemo.model.User;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.example.springbootdemo.model.system.SysUser;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 
 /**
  * <p>
@@ -27,9 +31,19 @@ public interface IUserService extends IService<User> {
 
     boolean add(User user);
 
+    boolean updateStatus(String id,String status);
+
+
     User one(String id);
+
+    IPage<Score> getScorePage(int pageNum, int pageSize, Score score);
 
     boolean del(String id);
 
     void exportList(HttpServletResponse response,User user) throws IOException;
+
+    void importList(MultipartFile file) throws Exception;
+
+    List<Map> userStatistics(String[] classNameArray);
+
 }

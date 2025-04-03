@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.example.springbootdemo.mapper.system.SysProcessMapper">
+
+  <select id="processList" resultType="com.example.springbootdemo.model.system.ProcessBo">
+
+   SELECT amp.* FROM( select am.ID_ as id,am.KEY_ as `key`,am.NAME_ as name,0  as suspensionState,
+   am.META_INFO_ as description,'保存' as suspensionStateName,am.CREATE_TIME_  as createTime
+   from act_re_model am where am.DEPLOYMENT_ID_ is null
+   union ALL
+
+   select ap.ID_ as id,ap.KEY_ as `key`,ap.NAME_ as name,ap.DESCRIPTION_ as description,
+   ap.SUSPENSION_STATE as suspensionState,
+   CASE WHEN ap.SUSPENSION_STATE_=1 THEN '激活' ELSE '挂起' END suspensionStateName,ad.DEPLOY_TIME_  as createTime
+   FROM act_re_procdef ap
+   left JOIN act_re_deployment ad on ad.ID_=ap.DEPLOYMENT_ID_)amp
+   ORDER BY amp.createTime desc
+
+
+  </select>
+
+
+
+
+</mapper>

@@ -1,4 +1,4 @@
-package com.example.springbootdemo.common.pojo;
+package com.example.springbootdemo.model.system;
 
 import lombok.Data;
 
@@ -8,8 +8,11 @@ public class ProcessBo {
     private String id;
     private String name;
     private String key;
+    private String category;
+    private String categoryName;
     private String description;
-    private String suspensionState;
+    private int suspensionState;
+    private String suspensionStateName;
     private String deploymentId;
 
     private String createTime;

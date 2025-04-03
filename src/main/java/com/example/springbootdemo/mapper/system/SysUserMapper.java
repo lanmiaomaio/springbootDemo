@@ -22,4 +22,6 @@ public interface SysUserMapper extends BaseMapper<SysUser> {
 
     //导出
     List<SysUser> userList(@Param("user") SysUser user);
+
+    String selectNameBatchIds(@Param("idList") String[] idList);
 }

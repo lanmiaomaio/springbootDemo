@@ -24,12 +24,11 @@ import java.time.LocalDateTime;
 @Data
 public class ScoreExcel {
 
+    @Excel(name = "学号")
+    private String userNo;
 
     @Excel(name="姓名")
     private String username;
-
-   @Excel(name = "学期")
-   private String semester;
 
     /**
      * 语文
@@ -50,9 +49,47 @@ public class ScoreExcel {
     private Integer english;
 
     /**
-     * 理综
+     * 物理
      */
-    @Excel(name = "理综",width = 15)
-    private Integer generalScience;
+    @Excel(name = "物理",width = 15)
+    private Integer physics;
 
+    /**
+     * 化学
+     */
+    @Excel(name = "化学",width = 15)
+    private Integer chemistry;
+
+    /**
+     * 生物
+     */
+    @Excel(name = "生物",width = 15)
+    private Integer organism;
+
+
+    /**
+     * 历史
+     */
+
+    @Excel(name = "历史",width = 15)
+    private Integer history;
+
+    /**
+     * 政治
+     */
+    @Excel(name = "政治",width = 15)
+    private Integer politics;
+
+    /**
+     * 地理
+     */
+
+    @Excel(name = "地理",width = 15)
+    private Integer geography;
+
+    @Excel(name = "理综",width = 15)
+    private Integer science;
+
+    @Excel(name = "文综",width = 15)
+    private Integer humanities;
 }

@@ -20,6 +20,8 @@ public interface ISysMenuService extends IService<SysMenu> {
 
     List<SysMenu> leftMenu();
 
+    List<SysMenu> getButPermission(String menuId);
+
     int del(String id);
 
     int add(SysMenu sysMenu);

@@ -17,8 +17,9 @@ spring:
   rabbitmq:
     host: 127.0.0.1
     port: 5672
-    username: user
-    password: user
+    username: guest
+    password: guest
+    virtual-host: /h  #虚拟主机
   activiti:
     #默认为false,activiti在启动的时候会对比数据库中的表中保存的版本，如果不一样会抛出异常
     # true activiti会对数据库中的表进行更新操作，如果表不存在，则自动创建

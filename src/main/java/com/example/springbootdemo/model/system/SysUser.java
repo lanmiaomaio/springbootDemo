@@ -8,6 +8,7 @@ import java.time.LocalDateTime;
 import com.baomidou.mybatisplus.annotation.TableId;
 import java.sql.Blob;
 import java.util.Date;
+import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
@@ -62,11 +63,28 @@ public class SysUser extends Model {
 
     private String positionId;
 
+    private String grade;
+
+    private String classs;
+
+    @TableField(exist = false)
+    private String gradeName;
+
+    @TableField(exist = false)
+    private String className;
+
+    @TableField(exist = false)
+    private String gradeClassName;
+
+
     @TableField(exist = false)
     private String deptName;
 
     @TableField(exist = false)
     private String positionName;
+
+    @TableField(exist = false)
+    private List<SysMenu> permissionList;
 
     /**
      * 姓名

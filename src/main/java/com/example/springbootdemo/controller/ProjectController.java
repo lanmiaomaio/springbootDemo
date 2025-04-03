@@ -6,24 +6,26 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.example.springbootdemo.common.ButtonPermission;
 import com.example.springbootdemo.common.JwtUtil;
 import com.example.springbootdemo.common.Log;
-import com.example.springbootdemo.model.system.ProcessBo;
 import com.example.springbootdemo.common.pojo.ResponseBo;
 import com.example.springbootdemo.model.Leave;
+import com.example.springbootdemo.model.Project;
+import com.example.springbootdemo.model.system.ProcessBo;
 import com.example.springbootdemo.service.ILeaveService;
+import com.example.springbootdemo.service.IProjectService;
 import org.activiti.engine.RepositoryService;
 import org.activiti.engine.RuntimeService;
 import org.activiti.engine.TaskService;
-import org.activiti.engine.history.HistoricActivityInstance;
 import org.activiti.engine.impl.identity.Authentication;
 import org.activiti.engine.repository.ProcessDefinition;
-import org.activiti.engine.task.Task;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletResponse;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * <p>
@@ -34,8 +36,8 @@ import java.util.*;
  * @since 2023-04-06
  */
 @RestController
-@RequestMapping("/leave")
-public class LeaveController {
+@RequestMapping("/project")
+public class ProjectController {
 
 
     @Autowired
@@ -45,7 +47,7 @@ public class LeaveController {
 
 
     @Autowired
-    private ILeaveService leaveService;
+    private IProjectService projectService;
 
     @Autowired
     private RepositoryService repositoryService;
@@ -58,23 +60,23 @@ public class LeaveController {
      */
     @GetMapping("page")
     public ResponseBo page(int pageNum,int pageSize,String val){
-        IPage<Leave> page = leaveService.getPage(pageNum, pageSize,val);
+        IPage<Project> page = projectService.getPage(pageNum, pageSize,val);
         return ResponseBo.ok(page);
     }
 
 
     /**
      * 添加
-     * @param leave
+     * @param project
      * @return
      */
     @PostMapping("/add")
-    @Log(title = "添加请假单")
-    @ButtonPermission(perm = "leave:add")
-    public ResponseBo add(@RequestBody Leave leave){
+    @Log(title = "添加项目单")
+    @ButtonPermission(perm = "project:add")
+    public ResponseBo add(@RequestBody Project project){
         String userId = JwtUtil.getCurrentUserId();
-        leave.setUserId(userId);
-        boolean save = leaveService.add(leave);
+        project.setUserId(userId);
+        boolean save = projectService.add(project);
         if(save){
             return ResponseBo.ok("添加成功");
         }else{
@@ -85,14 +87,14 @@ public class LeaveController {
 
     /**
      * 编辑
-     * @param leave
+     * @param project
      * @return
      */
     @PostMapping("/edit")
-    @Log(title = "修改请假单")
-    @ButtonPermission(perm = "leave:edit")
-    public ResponseBo edit(@RequestBody Leave leave){
-        boolean save = leaveService.edit(leave);
+    @Log(title = "修改项目单")
+    @ButtonPermission(perm = "project:edit")
+    public ResponseBo edit(@RequestBody Project project){
+        boolean save = projectService.edit(project);
         if(save){
             return ResponseBo.ok("修改成功");
         }else{
@@ -106,10 +108,10 @@ public class LeaveController {
      * @return
      */
     @GetMapping("/one")
-    @ButtonPermission(perm = "leave:view")
+    @ButtonPermission(perm = "project:view")
     public ResponseBo one(String id){
         if(StringUtils.isNotBlank(id)){
-            Leave one = leaveService.one(id);
+            Project one = projectService.one(id);
             return ResponseBo.ok(one);
         }else{
             return ResponseBo.error("查询失败");
@@ -122,11 +124,11 @@ public class LeaveController {
      * @return
      */
     @GetMapping("/del")
-    @Log(title = "删除请假单")
+    @Log(title = "删除项目单")
     @ButtonPermission(perm = "leave:del")
     public ResponseBo del(String id){
         if(StringUtils.isNotBlank(id)){
-            boolean del = leaveService.del(id);
+            boolean del = projectService.del(id);
             if(del){
                 return ResponseBo.ok("删除成功");
             }else{
@@ -143,7 +145,7 @@ public class LeaveController {
      */
     @GetMapping("/getProcessList")
     public ResponseBo getProcessList(){
-        List<ProcessDefinition> list = repositoryService.createProcessDefinitionQuery().processDefinitionCategory("5431646bd081c3ac567de98e127101d4").active().latestVersion().list();
+        List<ProcessDefinition> list = repositoryService.createProcessDefinitionQuery().processDefinitionCategory("c1207474e3de103261903e02d0ee5e28").active().latestVersion().list();
         List<ProcessBo> processBoList=new ArrayList<>();
         for (ProcessDefinition processDefinition:list){
             ProcessBo processBo=new ProcessBo();
@@ -157,21 +159,21 @@ public class LeaveController {
      * 启动流程
      * @return
      */
-    @Log(title = "提交请假单")
+    @Log(title = "提交项目单")
     @PostMapping("/startActivity")
-    @ButtonPermission(perm = "leave:subApprove")
-    public ResponseBo startActivity(@RequestBody Leave leave){
-        leaveService.startActivity(leave);
+    @ButtonPermission(perm = "project:subApprove")
+    public ResponseBo startActivity(@RequestBody Project project){
+        projectService.startActivity(project);
         return ResponseBo.ok();
     }
 
     /**
-     * 请假管理-审批历史
+     * 项目管理-审批历史
      */
     @RequestMapping("/historyApproval")
-    @ButtonPermission(perm = "leave:historyApproval")
+    @ButtonPermission(perm = "project:historyApproval")
     public ResponseBo leaveHistoryApproval(Integer pageNum,Integer pageSize,String processInstanceId) {
-        IPage<Map> comments = leaveService.historyApproval(pageNum,pageSize,processInstanceId);
+        IPage<Map> comments = projectService.historyApproval(pageNum,pageSize,processInstanceId);
         return ResponseBo.ok(comments);
     }
 
@@ -183,19 +185,19 @@ public class LeaveController {
      */
     @RequestMapping("/getTaskList")
     public ResponseBo getTaskList(int pageNum, int pageSize,String approvalStatus){
-        IPage<Leave> page=leaveService.getTaskPage(pageNum, pageSize,approvalStatus);
+        IPage<Project> page=projectService.getTaskPage(pageNum, pageSize,approvalStatus);
         return ResponseBo.ok(page);
     }
     /**
      * 审批
-     * @param leave
+     * @param project
      * @return
      */
     @PostMapping("/complete")
     @Log(title = "审批")
-    @ButtonPermission(perm = "leave:approve:approve")
-    public ResponseBo complete(@RequestBody Leave leave){
-        leaveService.complete(leave);
+    @ButtonPermission(perm = "project:approve:approve")
+    public ResponseBo complete(@RequestBody Project project){
+        projectService.complete(project);
 
         return ResponseBo.ok();
     }
@@ -206,15 +208,16 @@ public class LeaveController {
      */
     @Log(title = "指派审批人")
     @GetMapping("/setApprover")
-    @ButtonPermission(perm = "leave:approve:assign")
-    public ResponseBo setApprover(String leaveId,String taskId,String approvalUserId){
+    @ButtonPermission(perm = "project:approve:assign")
+    public ResponseBo setApprover(String projectId, String taskId,String approvalUserId){
+
         Authentication.setAuthenticatedUserId(JwtUtil.getCurrentUserId());
         JSONObject jsonObject=new JSONObject();
         jsonObject.put("reason","");
         jsonObject.put("examineStatus","6");
         jsonObject.put("approvalUserId",approvalUserId);
-        Leave leave = leaveService.getById(leaveId);
-        taskService.addComment(taskId,leave.getProcessInstanceId(),"请假管理指派审批人",jsonObject.toJSONString());
+        Project project = projectService.getById(projectId);
+        taskService.addComment(taskId,project.getProcessInstanceId(),"项目管理指派审批人",jsonObject.toJSONString());
 
         taskService.setAssignee(taskId,approvalUserId);
 
@@ -227,7 +230,7 @@ public class LeaveController {
     @RequestMapping("/getProcessView")
     public void getProcessView(HttpServletResponse response,@RequestParam String processInstanceId) throws Exception {
 
-        leaveService.getProcessView(processInstanceId,response);
+        projectService.getProcessView(processInstanceId,response);
     }
 
 
@@ -236,9 +239,9 @@ public class LeaveController {
      * 我的审批-审批历史
      */
     @RequestMapping("/approvalHistoryApproval")
-    @ButtonPermission(perm = "leave:approve:historyApproval")
+    @ButtonPermission(perm = "project:approve:historyApproval")
     public ResponseBo approvalHistoryApproval(Integer pageNum,Integer pageSize,String processInstanceId) {
-        IPage<Map> comments = leaveService.historyApproval(pageNum,pageSize,processInstanceId);
+        IPage<Map> comments = projectService.historyApproval(pageNum,pageSize,processInstanceId);
         return ResponseBo.ok(comments);
     }
 
@@ -247,33 +250,37 @@ public class LeaveController {
      */
     @RequestMapping("/receiveTask")
     @Log(title = "领取任务")
-    @ButtonPermission(perm = "leave:approve:receive")
-    public ResponseBo receiveTask(String leaveId,String taskId) {
-        leaveService.receiveTask(leaveId,taskId);
+    @ButtonPermission(perm = "project:approve:receive")
+    public ResponseBo receiveTask(String projectId,String taskId) {
+        projectService.receiveTask(projectId,taskId);
         return ResponseBo.ok();
     }
 
 
     /**
-     * 退回任务
+     * 领取任务
      */
     @RequestMapping("/returnTask")
     @Log(title = "退回任务")
-    @ButtonPermission(perm = "leave:approve:return")
-    public ResponseBo returnTask(String leaveId,String taskId) {
-        leaveService.returnTask(leaveId,taskId);
+    @ButtonPermission(perm = "project:approve:return")
+    public ResponseBo returnTask(String projectId,String taskId) {
+        projectService.returnTask(projectId,taskId);
         return ResponseBo.ok();
     }
 
     /**
-     * 获取已审批的历史节点
-     * @param processInstanceId
+     * 项目审批详情
+     * @param id
      * @return
      */
-    @RequestMapping("/getHistoryProcessNode")
-    @Log(title = "已审批的历史节点")
-    public ResponseBo getHistoryProcessNode(String processInstanceId) {
-        List<HistoricActivityInstance> historyProcessNode = leaveService.getHistoryProcessNode(processInstanceId);
-        return ResponseBo.ok(historyProcessNode);
+    @GetMapping("/approvalOne")
+    @ButtonPermission(perm = "project:approve:view")
+    public ResponseBo approvalOne(String id){
+        if(StringUtils.isNotBlank(id)){
+            Project one = projectService.one(id);
+            return ResponseBo.ok(one);
+        }else{
+            return ResponseBo.error("查询失败");
+        }
     }
 }

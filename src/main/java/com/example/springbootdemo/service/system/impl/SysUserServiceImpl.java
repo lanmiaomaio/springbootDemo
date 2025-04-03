@@ -5,11 +5,15 @@ import cn.afterturn.easypoi.excel.ExcelExportUtil;
 import cn.afterturn.easypoi.excel.entity.ExportParams;
 import cn.afterturn.easypoi.excel.entity.enmus.ExcelType;
 import cn.hutool.core.bean.BeanUtil;
+import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.example.springbootdemo.mapper.CourseMapper;
+import com.example.springbootdemo.model.Course;
 import com.example.springbootdemo.model.system.*;
 import com.example.springbootdemo.mapper.system.SysUserMapper;
+import com.example.springbootdemo.service.ICourseService;
 import com.example.springbootdemo.service.system.ISysDictionaryService;
 import com.example.springbootdemo.service.system.ISysRoleService;
 import com.example.springbootdemo.service.system.ISysUserRoleService;
@@ -31,6 +35,7 @@ import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -56,6 +61,9 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
     private ISysDictionaryService sysDictionaryService;
 
     @Autowired
+    private CourseMapper courseMapper;
+
+    @Autowired
     private IdentityService identityService;
 
     @Override
@@ -69,7 +77,30 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
     public IPage<SysUser> getPage(int pageNum, int pageSize,SysUser sysUser) {
         IPage<SysUser> page=new Page<>(pageNum,pageSize);
         IPage<SysUser> userIPage = baseMapper.userList(page, sysUser);
-
+        userIPage.getRecords().stream().forEach(sysUser1 -> {
+            if(StringUtils.isNotBlank(sysUser1.getClasss())){
+                String[] split = sysUser1.getClasss().split(",");
+                String gradeClassName="";
+                for (int i=0;i<split.length;i++){
+                    Course course = courseMapper.selectById(split[i]);
+                    if (course!=null&&StringUtils.isNotBlank(course.getParentId())) {
+                        Course course1 = courseMapper.selectById(course.getParentId());
+                        course.setParentName(course1.getTitle());
+                        gradeClassName+=course.getParentName()+" "+course.getTitle()+(split.length-1==i?"":",");
+                    }
+                }
+                sysUser1.setGradeClassName(gradeClassName);
+            }
+            LambdaQueryWrapper<SysUserRole> sysUserRoleLambdaQueryWrapper=new LambdaQueryWrapper<>();
+            sysUserRoleLambdaQueryWrapper.eq(SysUserRole::getUserId,sysUser1.getId());
+            List<SysUserRole> sysUserRoles = sysUserRoleService.list(sysUserRoleLambdaQueryWrapper);
+            List<String> roleNameList=new ArrayList<>();
+            sysUserRoles.stream().forEach(sysUserRole -> {
+                SysRole role = sysRoleService.one(sysUserRole.getRoleId());
+                roleNameList.add(role.getRoleName());
+            });
+            sysUser1.setRoleNames( String.join("、", roleNameList));
+        });
         return userIPage;
     }
 
@@ -142,8 +173,18 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
     public SysUser one(String id) {
         SysUser sysUser = baseMapper.selectById(id);
         if(sysUser!=null){
-            if(StringUtils.isNotBlank(sysUser.getDeptId())){
-                sysUser.setDeptName(sysDictionaryService.one(sysUser.getDeptId()).getName());
+            if(StringUtils.isNotBlank(sysUser.getClasss())){
+                String[] split = sysUser.getClasss().split(",");
+                String gradeClassName="";
+                for (int i=0;i<split.length;i++){
+                    Course course = courseMapper.selectById(split[i]);
+                    if (course!=null&&StringUtils.isNotBlank(course.getParentId())) {
+                        Course course1 = courseMapper.selectById(course.getParentId());
+                        course.setParentName(course1.getTitle());
+                        gradeClassName+=course.getParentName()+" "+course.getTitle()+(split.length-1==i?"":",");
+                    }
+                }
+                sysUser.setGradeClassName(gradeClassName);
             }
             if(StringUtils.isNotBlank(sysUser.getPositionId())){
                 sysUser.setPositionName(sysDictionaryService.one(sysUser.getPositionId()).getName());
@@ -179,6 +220,12 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
     }
 
     @Override
+    public String selectNameBatchIds(String[] idList) {
+        return baseMapper.selectNameBatchIds(idList);
+    }
+
+
+    @Override
     public void exportList(HttpServletResponse response,SysUser sysUser) throws IOException {
         List<SysUser> sysUserList = baseMapper.userList(sysUser);
         List<SysUserExcel> sysUserExcelList = BeanUtil.copyToList(sysUserList, SysUserExcel.class);
@@ -189,7 +236,6 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
 
         ServletOutputStream out = response.getOutputStream();
 
-
         //设置excel参数
         ExportParams params = new ExportParams();
         //设置sheet名名称
@@ -197,10 +243,12 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         //设置标题
         params.setTitle("系统用户信息表");
 
-        params.setType(ExcelType.HSSF);
+        params.setType(ExcelType.XSSF);
 
         Workbook workbook = ExcelExportUtil.exportExcel(params, SysUserExcel.class, sysUserExcelList);
         workbook.write(out);
     }
+
+
 
 }

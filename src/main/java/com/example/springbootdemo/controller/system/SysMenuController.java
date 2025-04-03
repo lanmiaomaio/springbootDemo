@@ -2,6 +2,7 @@ package com.example.springbootdemo.controller.system;
 
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.example.springbootdemo.common.ButtonPermission;
 import com.example.springbootdemo.common.JwtUtil;
 import com.example.springbootdemo.common.Log;
 import com.example.springbootdemo.common.pojo.ResponseBo;
@@ -39,6 +40,7 @@ public class SysMenuController {
      */
     @PostMapping("/add")
     @Log(title = "添加菜单")
+    @ButtonPermission(perm = "sys:menu:add")
     public ResponseBo add(@RequestBody SysMenu sysMenu){
         int addInt= sysMenuService.add(sysMenu);
         if(addInt==1){
@@ -55,6 +57,7 @@ public class SysMenuController {
      */
     @PostMapping("/edit")
     @Log(title = "修改菜单")
+    @ButtonPermission(perm = "sys:menu:edit")
     public ResponseBo edit(@RequestBody SysMenu sysMenu){
         int addInt= sysMenuService.edit(sysMenu);
         if(addInt==1){
@@ -70,6 +73,7 @@ public class SysMenuController {
      * @return
      */
     @GetMapping("/one")
+    @ButtonPermission(perm = "sys:menu:view")
     public ResponseBo one(String id){
         SysMenu sysMenu= sysMenuService.one(id);
         return ResponseBo.ok(sysMenu);
@@ -81,6 +85,7 @@ public class SysMenuController {
      */
     @GetMapping("/del")
     @Log(title = "删除菜单")
+    @ButtonPermission(perm = "sys:menu:del")
     public ResponseBo add(String id){
         int delInt= sysMenuService.del(id);
         if(delInt==1){

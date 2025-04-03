@@ -6,8 +6,8 @@
 
   <select id="userList" resultType="com.example.springbootdemo.model.system.SysUser" parameterType="com.example.springbootdemo.model.system.SysUser">
 
-    SELECT su.id,su.username,
-    su.real_name as realName,su.phone,su.dept_id,d.`name` as deptName,
+    SELECT su.id,su.username,su.grade,su.classs,dg.name as gradeName,dc.name as className,
+    su.real_name as realName,su.phone,su.dept_id,d.`name` as deptName,concat(dg.name, ' ', dc.name) as gradeClassName,
     su.position_id,dp.`name` as positionName,
     su.`status`,CASE WHEN su.`status`='1' THEN '启用' ELSE '禁用' END  as statusName,
     su.gender,CASE WHEN su.gender='1' THEN '男' ELSE '女' END as genderName,
@@ -16,6 +16,10 @@
     from sys_user su
     left join sys_dictionary d on su.dept_id=d.id
     left join sys_dictionary dp on su.position_id=dp.id
+
+
+    left join sys_dictionary dg on su.grade=dg.id
+    left join sys_dictionary dc on su.classs=dc.id
     <where>
       <if test="user.username!=null and user.username!=''">
        and su.username=#{user.username}
@@ -27,6 +31,22 @@
     </where>
     order by su.create_time desc
 
+
+  </select>
+
+  <select id="selectNameBatchIds" parameterType="java.util.Arrays" resultType="java.lang.String">
+    SELECT
+      GROUP_CONCAT(real_name SEPARATOR  '、') as	realNames
+
+    FROM
+      sys_user
+
+     <where>
+          id in
+       <foreach collection="idList" item="id" index="index" open="(" close=")" separator=",">
+         #{id}
+       </foreach>
+     </where>
 
   </select>
 

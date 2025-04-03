@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.example.springbootdemo.model.system.SysMenu;
 import com.example.springbootdemo.model.system.SysUser;
 import com.baomidou.mybatisplus.extension.service.IService;
+import org.apache.ibatis.annotations.Param;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -29,6 +30,8 @@ public interface ISysUserService extends IService<SysUser> {
     SysUser one(String id);
 
     boolean del(String id);
+
+    String selectNameBatchIds(String[] idList);
 
     void exportList(HttpServletResponse response,SysUser sysUser) throws IOException;
 
