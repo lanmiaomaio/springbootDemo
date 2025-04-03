@@ -1,4 +1,4 @@
-package com.example.springbootdemo.common;
+package com.example.springbootdemo.common.shiro;
 
 import com.example.springbootdemo.model.system.SysUser;
 import com.example.springbootdemo.service.system.ISysUserService;

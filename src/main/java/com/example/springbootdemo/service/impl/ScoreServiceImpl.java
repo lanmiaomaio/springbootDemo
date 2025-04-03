@@ -9,7 +9,7 @@ import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.example.springbootdemo.common.JwtUtil;
+import com.example.springbootdemo.common.util.JwtUtil;
 import com.example.springbootdemo.mapper.UserMapper;
 import com.example.springbootdemo.model.*;
 import com.example.springbootdemo.mapper.ScoreMapper;

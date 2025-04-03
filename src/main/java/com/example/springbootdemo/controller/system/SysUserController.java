@@ -3,8 +3,8 @@ package com.example.springbootdemo.controller.system;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.example.springbootdemo.common.ButtonPermission;
-import com.example.springbootdemo.common.Log;
+import com.example.springbootdemo.common.aspect.ButtonPermission;
+import com.example.springbootdemo.common.aspect.Log;
 import com.example.springbootdemo.common.pojo.ResponseBo;
 import com.example.springbootdemo.common.util.MD5Utils;
 import com.example.springbootdemo.model.system.SysDictionary;

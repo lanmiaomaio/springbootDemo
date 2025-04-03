@@ -2,18 +2,15 @@ package com.example.springbootdemo.controller;
 
 
 import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.example.springbootdemo.common.ButtonPermission;
-import com.example.springbootdemo.common.Log;
+import com.example.springbootdemo.common.aspect.ButtonPermission;
+import com.example.springbootdemo.common.aspect.Log;
 import com.example.springbootdemo.common.pojo.ResponseBo;
 import com.example.springbootdemo.model.*;
 import com.example.springbootdemo.service.ICourseService;
 import com.example.springbootdemo.service.IScoreCategoryService;
 import com.example.springbootdemo.service.IScoreService;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -23,7 +20,6 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.*;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toCollection;

@@ -2,8 +2,8 @@ package com.example.springbootdemo.controller;
 
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.example.springbootdemo.common.ButtonPermission;
-import com.example.springbootdemo.common.Log;
+import com.example.springbootdemo.common.aspect.ButtonPermission;
+import com.example.springbootdemo.common.aspect.Log;
 import com.example.springbootdemo.common.pojo.ResponseBo;
 import com.example.springbootdemo.model.Course;
 import com.example.springbootdemo.service.ICourseService;

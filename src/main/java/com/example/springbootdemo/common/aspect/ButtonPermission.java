@@ -1,4 +1,4 @@
-package com.example.springbootdemo.common;
+package com.example.springbootdemo.common.aspect;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

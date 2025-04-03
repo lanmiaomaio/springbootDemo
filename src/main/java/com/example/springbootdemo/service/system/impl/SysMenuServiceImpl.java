@@ -3,16 +3,14 @@ package com.example.springbootdemo.service.system.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.example.springbootdemo.common.JwtUtil;
+import com.example.springbootdemo.common.util.JwtUtil;
 import com.example.springbootdemo.model.system.SysMenu;
 import com.example.springbootdemo.mapper.system.SysMenuMapper;
-import com.example.springbootdemo.model.system.SysUser;
 import com.example.springbootdemo.service.system.ISysMenuService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**

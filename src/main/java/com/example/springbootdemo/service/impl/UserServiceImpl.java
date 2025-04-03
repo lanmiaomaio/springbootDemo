@@ -10,7 +10,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.example.springbootdemo.common.JwtUtil;
+import com.example.springbootdemo.common.util.JwtUtil;
 import com.example.springbootdemo.mapper.ScoreMapper;
 import com.example.springbootdemo.model.Course;
 import com.example.springbootdemo.model.Score;
@@ -18,10 +18,8 @@ import com.example.springbootdemo.model.ScoreUser;
 import com.example.springbootdemo.model.User;
 import com.example.springbootdemo.mapper.UserMapper;
 import com.example.springbootdemo.model.excelVo.UserExcel;
-import com.example.springbootdemo.model.system.SysDictionary;
 import com.example.springbootdemo.model.system.SysUser;
 import com.example.springbootdemo.service.ICourseService;
-import com.example.springbootdemo.service.IScoreService;
 import com.example.springbootdemo.service.IScoreUserService;
 import com.example.springbootdemo.service.IUserService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -43,7 +41,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * <p>

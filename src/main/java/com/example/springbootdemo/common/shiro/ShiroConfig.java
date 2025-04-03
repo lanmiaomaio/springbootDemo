@@ -1,4 +1,4 @@
-package com.example.springbootdemo.common;
+package com.example.springbootdemo.common.shiro;
 
 import org.apache.shiro.mgt.SecurityManager;
 import org.apache.shiro.spring.web.ShiroFilterFactoryBean;

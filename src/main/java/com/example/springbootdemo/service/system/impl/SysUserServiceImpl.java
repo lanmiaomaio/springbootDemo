@@ -96,8 +96,11 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
             List<SysUserRole> sysUserRoles = sysUserRoleService.list(sysUserRoleLambdaQueryWrapper);
             List<String> roleNameList=new ArrayList<>();
             sysUserRoles.stream().forEach(sysUserRole -> {
-                SysRole role = sysRoleService.one(sysUserRole.getRoleId());
-                roleNameList.add(role.getRoleName());
+                SysRole role = sysRoleService.getById(sysUserRole.getRoleId());
+                if(role!=null){
+                    roleNameList.add(role.getRoleName());
+
+                }
             });
             sysUser1.setRoleNames( String.join("、", roleNameList));
         });

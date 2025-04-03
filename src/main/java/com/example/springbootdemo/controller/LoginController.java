@@ -1,8 +1,8 @@
 package com.example.springbootdemo.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.example.springbootdemo.common.IpUtil;
-import com.example.springbootdemo.common.JwtUtil;
+import com.example.springbootdemo.common.util.IpUtil;
+import com.example.springbootdemo.common.util.JwtUtil;
 import com.example.springbootdemo.common.pojo.ResponseBo;
 import com.example.springbootdemo.common.util.MD5Utils;
 import com.example.springbootdemo.model.Leave;
@@ -101,7 +101,6 @@ public class LoginController {
         List<SysMenu> sysMenus = sysMenuService.leftMenu();
         return ResponseBo.ok(sysMenus);
     }
-
     /**
      * 按钮权限
      * @return

@@ -1,4 +1,4 @@
-package com.example.springbootdemo.common;
+package com.example.springbootdemo.common.cors;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

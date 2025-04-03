@@ -1,7 +1,9 @@
-package com.example.springbootdemo.common;
+package com.example.springbootdemo.common.util;
 
 import com.auth0.jwt.JWT;
+import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
+import com.auth0.jwt.interfaces.DecodedJWT;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.example.springbootdemo.model.system.SysUser;
 import com.example.springbootdemo.service.system.ISysUserService;
@@ -16,7 +18,7 @@ public class JwtUtil {
     @Autowired
     private static ISysUserService sysUserService;
 
-    private static final long EXPIRE_TIME = 60 * 60 * 1000;  //过期时间1小时
+    private static final long EXPIRE_TIME =  60*601000;  //过期时间1小时
     //生成token
     public static String getToken(SysUser sysUser) {
         Date date = new Date(System.currentTimeMillis() + EXPIRE_TIME);
@@ -55,5 +57,25 @@ public class JwtUtil {
             return null;
         }
         return null;
+    }
+
+
+    public int isExpiresAt() {
+        String userId = JwtUtil.getCurrentUserId();
+        if (org.apache.commons.lang3.StringUtils.isNotBlank(userId)) {
+            SysUser sysUser = sysUserService.getById(userId);
+            JWTVerifier jwtVerifier = JWT.require(Algorithm.HMAC256(sysUser.getPassword())).build();
+            //校对token
+            DecodedJWT decodedJWT = JWT.decode(JwtUtil.getToken(sysUser));
+            Date expirationDate = decodedJWT.getExpiresAt();
+
+            if (expirationDate.before(new Date())) {
+                //token过期
+                return 1;
+            }
+        }else{
+            return 2;
+        }
+        return 3;
     }
 }

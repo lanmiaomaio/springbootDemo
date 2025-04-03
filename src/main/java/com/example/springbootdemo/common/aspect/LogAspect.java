@@ -1,10 +1,10 @@
-package com.example.springbootdemo.common;
+package com.example.springbootdemo.common.aspect;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
-import com.example.springbootdemo.model.system.SysLoginLog;
+import com.example.springbootdemo.common.util.IpUtil;
+import com.example.springbootdemo.common.util.JwtUtil;
 import com.example.springbootdemo.model.system.SysOperLog;
-import com.example.springbootdemo.service.system.ISysLoginLogService;
 import com.example.springbootdemo.service.system.ISysOperLogService;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.AfterReturning;
@@ -19,7 +19,6 @@ import org.springframework.web.context.request.RequestContextHolder;
 
 import javax.servlet.http.HttpServletRequest;
 import java.lang.reflect.Method;
-import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -45,7 +44,7 @@ public class LogAspect {
      * @Return： void
      * @editNote：
      */
-    @Pointcut("@annotation(com.example.springbootdemo.common.Log)")
+    @Pointcut("@annotation(com.example.springbootdemo.common.aspect.Log)")
     public void logPoinCut() {
     }
 
@@ -110,53 +109,6 @@ public class LogAspect {
             e.printStackTrace();
         }
     }
-
-//    /**
-//     * @methodName：doAfterThrowing
-//     * @description：异常返回通知，用于拦截异常日志信息 连接点抛出异常后执行
-//     * @author：tanyp
-//     * @dateTime：2021/11/18 14:23
-//     * @Params： [joinPoint, e]
-//     * @Return： void
-//     * @editNote：
-//     */
-//    @AfterThrowing(pointcut = "exceptionLogPoinCut()", throwing = "e")
-//    public void doAfterThrowing(JoinPoint joinPoint, Throwable e) {
-//        // 获取RequestAttributes
-//        RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
-//
-//        // 从获取RequestAttributes中获取HttpServletRequest的信息
-//        HttpServletRequest request = (HttpServletRequest) requestAttributes.resolveReference(RequestAttributes.REFERENCE_REQUEST);
-//
-//        try {
-//            // 从切面织入点处通过反射机制获取织入点处的方法
-//            MethodSignature signature = (MethodSignature) joinPoint.getSignature();
-//
-//            // 获取切入点所在的方法
-//            Method method = signature.getMethod();
-//
-//            // 获取请求的类名
-//            String className = joinPoint.getTarget().getClass().getName();
-//
-//            logErrorInfoService.save(
-//                    LogErrorInfo.builder()
-//                            .id(UUID.randomUUID().toString())
-//                            .reqParam(JSON.toJSONString(converMap(request.getParameterMap()))) // 请求参数
-//                            .method(className + "." + method.getName()) // 请求方法名
-//                            .name(e.getClass().getName()) // 异常名称
-//                            .message(stackTraceToString(e.getClass().getName(), e.getMessage(), e.getStackTrace())) // 异常信息
-//                            .userId(SecurityUserUtils.getUser().getId()) // 操作员ID
-//                            .userName(SecurityUserUtils.getUser().getUsername()) // 操作员名称
-//                            .uri(request.getRequestURI()) // 操作URI
-//                            .ip(IPUtils.getIpAddress(request)) // 操作员IP
-//                            .version(version) // 版本号
-//                            .createTime(LocalDateTime.now()) // 发生异常时间
-//                            .build()
-//            );
-//        } catch (Exception e2) {
-//            e2.printStackTrace();
-//        }
-//    }
 
     /**
      * @methodName：converMap

@@ -3,7 +3,6 @@ package com.example.springbootdemo.service.system.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.example.springbootdemo.common.JwtUtil;
 import com.example.springbootdemo.model.system.SysMenu;
 import com.example.springbootdemo.model.system.SysMenuRole;
 import com.example.springbootdemo.model.system.SysRole;
@@ -22,8 +21,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * <p>
