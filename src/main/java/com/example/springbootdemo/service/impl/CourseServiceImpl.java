@@ -12,12 +12,12 @@ import com.example.springbootdemo.service.system.ISysDictionaryService;
 import com.example.springbootdemo.service.system.ISysUserService;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.io.*;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -36,6 +36,13 @@ public class CourseServiceImpl extends ServiceImpl<CourseMapper, Course> impleme
 
     @Autowired
     private ISysUserService sysUserService;
+
+    private static String[][] initials = {{"","第1-2节","第3-4节","第5-6节","第7-8节","第1节","第2节"},
+            {"星期一丨\t","\t","\t","\t","\t","\t","\t"},
+            {"星期二丨\t","\t","\t","\t","\t","\t","\t"},
+            {"星期三丨\t","\t","\t","\t","\t","\t","\t"},
+            {"星期四丨\t","\t","\t","\t","\t","\t","\t"},
+            {"星期五丨\t","\t","\t","\t","\t","\t","\t"}};
 
     @Override
     public IPage<Course> getPage(int pageNum, int pageSize, Course course) {
@@ -153,6 +160,43 @@ public class CourseServiceImpl extends ServiceImpl<CourseMapper, Course> impleme
         List<Course> scoreCourseList = baseMapper.selectList(scoreCourseLambdaQueryWrapper);
         course.setScoreCourseList(scoreCourseList);
         return course;
+    }
+
+    @Override
+    public void createSubject(String classId) throws IOException {
+
+        Map<String, Object> params=input(classId);
+        Resource resource = new ClassPathResource("template_report/course.docx");
+        File file = resource.getFile();
+        //创建输出流
+        OutputStream os = new FileOutputStream("C:\\Users\\28781\\Desktop\\output.docx");
+        //最终编译渲染并输出
+//        XWPFTemplate.compile(file).render(params).writeAndClose(os);
+        System.out.println("输出完毕");
+    }
+
+
+
+
+    //    批量录入课程
+    Map<String, Object> input(String classId) {
+        LambdaQueryWrapper<Course> courseLambdaQueryWrapper=new LambdaQueryWrapper<>();
+        courseLambdaQueryWrapper.eq(Course::getParentId,classId).eq(Course::getType,"course").orderByAsc(Course::getSortBy);
+        List<Course> list = baseMapper.selectList(courseLambdaQueryWrapper);
+        Map<String, Object> params = new HashMap<>();
+        String[] subjectOptions={"离散数学","java编程", "大学英语", "中国近代史", "思政", "军训理论","心理健康教育","体育","高等数学"};
+//		List<String> subjectOptions = list.stream().map(Course::getTitle).collect(Collectors.toList());
+        //  循环数组
+        for(int i=1;i<=initials.length;i++) {
+            for(int j=1;j<=initials.length;j++) {
+                Random random1=new Random();
+                params.put("course"+i+j,subjectOptions[random1.nextInt(subjectOptions.length)]);
+
+//				params.put("course"+i+j,subjectOptions.get(random1.nextInt(subjectOptions.size())));
+            }
+        }
+        System.out.println("---------------------------------");
+        return params;
     }
 
     @Override

@@ -30,6 +30,8 @@ public class ShiroConfig {
         filterChainDefinitionMap.put("/login", "anon");
         filterChainDefinitionMap.put("/upload1", "anon");
         filterChainDefinitionMap.put("/score/importExcel", "anon");
+        filterChainDefinitionMap.put("/user/importExcel", "anon");
+
 //        filterChainDefinitionMap.put("/system/menu/page", "anon");
 //        filterChainDefinitionMap.put("/sysUser", "anon");
         filterChainDefinitionMap.put("/**", "authc");
@@ -51,4 +53,6 @@ public class ShiroConfig {
         ShiroRealm shiroRealm = new ShiroRealm();
         return shiroRealm;
     }
+
+
 }

@@ -11,6 +11,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
+
 /**
  * <p>
  *  前端控制器
@@ -79,6 +81,21 @@ public class CourseController {
         if (StringUtils.isNotBlank(id)) {
             Course one = courseService.one(id);
             return ResponseBo.ok(one);
+        } else {
+            return ResponseBo.error("查询失败");
+        }
+    }
+
+    /**
+     * 生成课程表
+     * @param classId
+     * @return
+     */
+    @GetMapping("/createSubject")
+    public ResponseBo createSubject(String classId) throws IOException {
+        if (StringUtils.isNotBlank(classId)) {
+            courseService.createSubject(classId);
+            return ResponseBo.ok();
         } else {
             return ResponseBo.error("查询失败");
         }

@@ -50,7 +50,7 @@
 
   <select id="selectMaxUserNo" resultType="java.lang.String" parameterType="java.lang.String">
 
-    select SUBSTRING(max(u.user_no), 8)  from user u
+    select SUBSTRING(max(u.user_no), 5)  from user u
 
     where u.user_no like concat('%',#{userNo},'%')
   </select>

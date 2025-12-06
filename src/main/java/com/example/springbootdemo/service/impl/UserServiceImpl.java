@@ -12,10 +12,8 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.springbootdemo.common.util.JwtUtil;
 import com.example.springbootdemo.mapper.ScoreMapper;
-import com.example.springbootdemo.model.Course;
-import com.example.springbootdemo.model.Score;
-import com.example.springbootdemo.model.ScoreUser;
-import com.example.springbootdemo.model.User;
+import com.example.springbootdemo.mapper.UserCourseMapper;
+import com.example.springbootdemo.model.*;
 import com.example.springbootdemo.mapper.UserMapper;
 import com.example.springbootdemo.model.excelVo.UserExcel;
 import com.example.springbootdemo.model.system.SysUser;
@@ -68,6 +66,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
     @Autowired
     private ScoreMapper scoreMapper;
 
+    @Autowired
+    private UserCourseMapper userCourseMapper;
+
     @Override
     public User findByUserName(String userName) {
         LambdaQueryWrapper<User> userLambdaQueryWrapper=new LambdaQueryWrapper<>();
@@ -95,6 +96,24 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
     @Transactional
     public boolean edit(User user) {
         int i = baseMapper.updateById(user);
+        LambdaUpdateWrapper<UserCourse> userCourseLambdaUpdateWrapper=new LambdaUpdateWrapper<>();
+        userCourseLambdaUpdateWrapper.eq(UserCourse::getGradeId,user.getGrade());
+        userCourseLambdaUpdateWrapper.eq(UserCourse::getUserId,user.getId());
+        Integer integer = userCourseMapper.selectCount(userCourseLambdaUpdateWrapper);
+        if(integer>0){
+            LambdaUpdateWrapper<UserCourse> courseLambdaUpdateWrapper=new LambdaUpdateWrapper<>();
+            courseLambdaUpdateWrapper.set(UserCourse::getGradeId,user.getGrade());
+            courseLambdaUpdateWrapper.set(UserCourse::getClasssId,user.getClasss());
+            courseLambdaUpdateWrapper.eq(UserCourse::getUserId,user.getId());
+            userCourseMapper.update(new UserCourse(),courseLambdaUpdateWrapper);
+        }else{
+            UserCourse userCourse=new UserCourse();
+            userCourse.setUserId(user.getId());
+            userCourse.setGradeId(user.getGrade());
+            userCourse.setClasssId(user.getClasss());
+            userCourseMapper.insert(userCourse);
+
+        }
         if(i==0){
             return false;
         }else{
@@ -108,11 +127,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         user.setStatus("be4521e9b35b81ffc52eee3b9eff01c4");
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy");
         String format = sdf.format(new Date());
-        Course course = courseService.getById(user.getGrade());
-        String formatDate="高一".equals(course.getTitle())?format: "高二".equals(course.getTitle())?String.valueOf(Integer.parseInt(format)-1): "高三".equals(course.getTitle())?String.valueOf(Integer.parseInt(format)-2):format;
-        String gradeParam="高一".equals(course.getTitle())?"01": "高二".equals(course.getTitle())?"02": "高三".equals(course.getTitle())?"03":"04";
-        String maxUserNo = baseMapper.selectMaxUserNo(format + gradeParam);
-        user.setUserNo(formatDate+gradeParam+String.format("%04d", (StringUtils.isNotBlank(maxUserNo)?Integer.parseInt(maxUserNo):0) +1));
+        String maxUserNo = baseMapper.selectMaxUserNo(format);
+        user.setUserNo(format+String.format("%04d", (StringUtils.isNotBlank(maxUserNo)?Integer.parseInt(maxUserNo):0) +1));
         int insert = baseMapper.insert(user);
         if(insert==0){
             return false;
@@ -252,10 +268,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
 
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy");
             String format = sdf.format(new Date());
-            String formatDate="高一".equals(userExcel.getGradeName())?format: "高二".equals(userExcel.getGradeName())?String.valueOf(Integer.parseInt(format)-1): "高三".equals(userExcel.getGradeName())?String.valueOf(Integer.parseInt(format)-2):format;
-            String gradeParam="高一".equals(userExcel.getGradeName())?"01": "高二".equals(userExcel.getGradeName())?"02": "高三".equals(userExcel.getGradeName())?"03":"04";
-            String maxUserNo = baseMapper.selectMaxUserNo(format + gradeParam);
-            user.setUserNo(formatDate+gradeParam+String.format("%04d", Integer.parseInt(maxUserNo) +1));
+            String maxUserNo = baseMapper.selectMaxUserNo(format);
+            user.setUserNo(format+String.format("%04d", maxUserNo==null?1:Integer.parseInt(maxUserNo) +1));
             user.setAge(userExcel.getAge());
             user.setPhone(userExcel.getPhone());
             user.setGender(userExcel.getGender());
@@ -267,6 +281,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
 
         userArrayList.stream().forEach(user -> {
             baseMapper.insert(user);
+            UserCourse userCourse=new UserCourse();
+            userCourse.setUserId(user.getId());
+            userCourse.setGradeId(user.getGrade());
+            userCourse.setClasssId(user.getClasss());
+            userCourseMapper.insert(userCourse);
+
         });
     }
 

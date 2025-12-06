@@ -2,6 +2,7 @@ package com.example.springbootdemo;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+
 import com.example.springbootdemo.common.util.MD5Utils;
 import com.example.springbootdemo.mapper.UserMapper;
 import com.example.springbootdemo.model.Course;
@@ -38,24 +39,45 @@ import org.activiti.engine.runtime.ProcessInstance;
 import org.activiti.engine.task.Task;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.poi.xwpf.usermodel.XWPFDocument;
+import org.apache.poi.xwpf.usermodel.XWPFParagraph;
+import org.apache.poi.xwpf.usermodel.XWPFRun;
 import org.junit.jupiter.api.Test;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 
 import java.io.*;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.TimeoutException;
 
+import java.io.InputStream;
+
+
+
+
 @SpringBootTest
 class SpringBootDemoApplicationTest {
 
-
+	private static String[][] initials = {{"","第1-2节","第3-4节","第5-6节","第7-8节","第1节","第2节"},
+			{"星期一丨\t","\t","\t","\t","\t","\t","\t"},
+			{"星期二丨\t","\t","\t","\t","\t","\t","\t"},
+			{"星期三丨\t","\t","\t","\t","\t","\t","\t"},
+			{"星期四丨\t","\t","\t","\t","\t","\t","\t"},
+			{"星期五丨\t","\t","\t","\t","\t","\t","\t"}};
 	private static final String[] NAME_LIST = {
 			"赵", "钱", "孙", "李", "周", "吴", "郑", "王", "冯", "陈", "褚", "卫", "蒋", "沈", "韩", "杨",
 			"朱", "秦", "尤", "许", "何", "吕", "施", "张", "孔", "曹", "严", "华", "金", "魏", "陶", "姜",
@@ -520,7 +542,7 @@ class SpringBootDemoApplicationTest {
 	@Test
 	public void addCourse() {
 		List<Course> classList=new ArrayList<>();
-        for (int i=0;i<5;i++){
+		for (int i=0;i<5;i++){
 			Course course=new Course();
 			course.setType("scoreCourse");
 			course.setParentId("df91694dc13cfc670a2071b118e8d7d2");
@@ -594,4 +616,73 @@ class SpringBootDemoApplicationTest {
 		connection.close();
 	}
 
+	@Test
+	public void createSubject() {
+		String classId="912f95ec62a401684126e675fa207e02";
+
+		input(classId);   // 选择录入方式
+		output(initials); // 打印数组
+
+	}
+
+	@Test
+	public void aa() throws IOException {
+		String classId="912f95ec62a401684126e675fa207e02";
+
+		Map<String, Object> params=input(classId);
+		Resource resource = new ClassPathResource("template_report/course.xml");
+		File file = resource.getFile();
+		//创建输出流
+		OutputStream os = new FileOutputStream("C:\\Users\\28781\\Desktop\\output.docx");
+		//最终编译渲染并输出
+//		XWPFTemplate.compile(file).render(params).writeAndClose(os);
+
+		String wordFilePath="C:\\Users\\28781\\Desktop\\output.docx";
+		String pdfFilePath="C:\\Users\\28781\\Desktop\\output.pdf";
+		wordToPdf(wordFilePath,pdfFilePath);
+
+
+		System.out.println("输出完毕");
+
+	}
+
+	public static void wordToPdf(String wordFilePath, String pdfFilePath)  {
+
+	}
+
+
+
+	//    批量录入课程
+	Map<String, Object> input(String classId) {
+		LambdaQueryWrapper<Course> courseLambdaQueryWrapper=new LambdaQueryWrapper<>();
+		courseLambdaQueryWrapper.eq(Course::getParentId,classId).eq(Course::getType,"course").orderByAsc(Course::getSortBy);
+		List<Course> list = courseService.list(courseLambdaQueryWrapper);
+		Map<String, Object> params = new HashMap<>();
+		String[] subjectOptions={"离散数学","java编程", "大学英语", "中国近代史", "思政", "军训理论","心理健康教育","体育","高等数学"};
+//		List<String> subjectOptions = list.stream().map(Course::getTitle).collect(Collectors.toList());
+		//  循环数组
+		for(int i=1;i<=initials.length;i++) {
+			for(int j=1;j<=initials.length;j++) {
+				Random random1=new Random();
+				params.put("course"+i+j,subjectOptions[random1.nextInt(subjectOptions.length)]);
+
+//				params.put("course"+i+j,subjectOptions.get(random1.nextInt(subjectOptions.size())));
+			}
+		}
+		System.out.println("---------------------------------");
+		return params;
+	}
+
+	void output(String[][]initial) {
+		System.out.println("-------------------------------------------");
+		for (int i = 0; i < initial.length; i++) {
+			for (int j = 0; j < initial.length; j++) {
+				System.out.print(initial[i][j]+"\t\t");
+				if (j == initial.length - 1) {
+					System.out.println();
+				}
+			}
+		}
+		System.out.println("-------------------------------------------");
+	}
 }

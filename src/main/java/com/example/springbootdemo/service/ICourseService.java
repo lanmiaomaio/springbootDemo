@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.example.springbootdemo.model.Course;
 import com.baomidou.mybatisplus.extension.service.IService;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -24,6 +25,8 @@ public interface ICourseService extends IService<Course> {
     boolean edit(Course course);
 
     Course one(String id);
+
+    void createSubject(String classId) throws IOException;
 
     IPage<Course> getClassCoursePage(int pageNum,int pageSize,Course course);
 
