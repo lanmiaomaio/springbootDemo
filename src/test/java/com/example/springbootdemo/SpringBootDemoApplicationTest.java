@@ -20,9 +20,12 @@ import com.example.springbootdemo.service.system.ISysUserRoleService;
 import com.example.springbootdemo.service.system.ISysUserService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.code.kaptcha.impl.DefaultKaptcha;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
+import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.security.Keys;
 import org.activiti.engine.*;
 import org.activiti.engine.history.HistoricTaskInstance;
 import org.activiti.engine.identity.Group;
@@ -39,29 +42,28 @@ import org.activiti.engine.runtime.ProcessInstance;
 import org.activiti.engine.task.Task;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.poi.xwpf.usermodel.XWPFDocument;
-import org.apache.poi.xwpf.usermodel.XWPFParagraph;
-import org.apache.poi.xwpf.usermodel.XWPFRun;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.core.io.ByteArrayResource;
+
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.data.redis.core.StringRedisTemplate;
 
+import javax.crypto.SecretKey;
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
 import java.io.*;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
+
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import java.io.InputStream;
@@ -125,22 +127,27 @@ class SpringBootDemoApplicationTest {
 			"菱", "芙", "榆", "菱", "檀", "菱", "樱", "菱", "玫", "菱", "荷", "菱", "莲", "柳", "梨", "槐",
 			"桃", "菱", "竹", "菱", "松", "菱", "柏", "菱", "榕", "菱", "枫", "柯", "桦", "桐", "梓", "榕",
 			"杞", "檀", "棉", "棕", "楼",  "椿"};
-	@Autowired
+	@javax.annotation.Resource
 	private RuntimeService runtimeService;
-	@Autowired
+	@javax.annotation.Resource
 	private TaskService taskService;
 
-	@Autowired
+	@javax.annotation.Resource
 	private RepositoryService repositoryService;
 
 	@Autowired
 	private ISysUserService sysUserService;
 
-	@Autowired
+	@javax.annotation.Resource
 	private IdentityService identityService;
 
 	@Autowired
 	private ISysUserRoleService sysUserRoleService;
+
+
+	// 图形验证码配置
+	@Value("${kaptcha.expire-seconds}")
+	private Integer captchaExpireSeconds;
 
 	@Autowired
 	private ISysRoleService sysRoleService;
@@ -148,13 +155,19 @@ class SpringBootDemoApplicationTest {
 	@Autowired
 	private IUserService userService;
 
+	@javax.annotation.Resource
+	private DefaultKaptcha kaptchaProducer;
+
 	@Autowired
+	private StringRedisTemplate redisTemplate;
+
+	@javax.annotation.Resource
 	private UserMapper userMapper;
 
 	@Autowired
 	private ISysDictionaryService dictionaryService;
 
-	@Autowired
+	@javax.annotation.Resource
 	private HistoryService historyService;
 
 	@Autowired
@@ -685,4 +698,35 @@ class SpringBootDemoApplicationTest {
 		}
 		System.out.println("-------------------------------------------");
 	}
+
+	@Test
+	public void qqq(){
+		SecretKey secretKey = Keys.secretKeyFor(SignatureAlgorithm.HS256);
+		String aaa=Base64.getEncoder().encodeToString(secretKey.getEncoded());
+		System.out.println("JWT安全密钥（Base64）：" + aaa);
+	}
+
+	@Test
+	public void generateCaptcha() {
+		// 1. 生成验证码文本
+		String captchaText = kaptchaProducer.createText();
+		System.out.println(captchaText);
+		// 2. 生成验证码唯一标识
+		String captchaKey = "captcha:" + UUID.randomUUID().toString().replace("-", "");
+		// 3. 存入Redis
+		redisTemplate.opsForValue().set(captchaKey, captchaText, captchaExpireSeconds, TimeUnit.SECONDS);
+		// 4. 生成验证码图片并转为Base64
+		BufferedImage image = kaptchaProducer.createImage(captchaText);
+		try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+			ImageIO.write(image, "jpg", outputStream);
+			String base64Image = "data:image/jpeg;base64," + Base64.getEncoder().encodeToString(outputStream.toByteArray());
+			// 5. 返回结果
+			Map<String, String> result = new HashMap<>();
+			result.put("captchaKey", captchaKey);
+			result.put("captchaImage", base64Image);
+		} catch (Exception e) {
+			throw new RuntimeException("验证码生成失败");
+		}
+	}
+
 }

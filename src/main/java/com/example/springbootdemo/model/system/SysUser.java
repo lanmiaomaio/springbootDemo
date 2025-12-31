@@ -129,5 +129,10 @@ public class SysUser extends Model {
     @TableField(exist = false)
     private String genderName;
 
+    @TableField(exist = false)
+    private String captcha;
+
+    @TableField(exist = false)
+    private String captchaKey;
 
 }

@@ -1,6 +1,8 @@
 package com.example.springbootdemo.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.example.springbootdemo.common.captcha.CaptchaUtil;
+import com.example.springbootdemo.common.redis.RedisUtil;
 import com.example.springbootdemo.common.util.IpUtil;
 import com.example.springbootdemo.common.util.JwtUtil;
 import com.example.springbootdemo.common.pojo.ResponseBo;
@@ -17,6 +19,7 @@ import com.example.springbootdemo.service.IUserService;
 import com.example.springbootdemo.service.system.ISysLoginLogService;
 import com.example.springbootdemo.service.system.ISysMenuService;
 import com.example.springbootdemo.service.system.ISysUserService;
+import com.google.code.kaptcha.impl.DefaultKaptcha;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.authc.*;
@@ -24,7 +27,10 @@ import org.apache.shiro.subject.Subject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import javax.imageio.ImageIO;
 import javax.servlet.http.HttpServletRequest;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.util.*;
 
 @RestController
@@ -48,8 +54,49 @@ public class LoginController {
     @Autowired
     private IProjectService projectService;
 
+
+    @Autowired
+    private RedisUtil redisUtil;
+
+    private static final long captchaExpireTime=120;
+
+
+    @GetMapping("/generateCaptcha")
+    public ResponseBo generateCaptcha()  {
+
+        String captchaText=CaptchaUtil.createText();
+        // 2. 生成验证码唯一标识
+        String captchaKey = "captcha:" + UUID.randomUUID().toString().replace("-", "");
+        // 3. 存入Redis
+        redisUtil.setWithExpire(captchaKey, captchaText, captchaExpireTime);
+        // 4. 生成验证码图片并转为Base64
+        BufferedImage image = CaptchaUtil.createImage(captchaText);
+
+
+        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+            ImageIO.write(image, "jpg", outputStream);
+            String base64Image = "data:image/jpeg;base64," + Base64.getEncoder().encodeToString(outputStream.toByteArray());
+            // 5. 返回结果
+            Map<String, String> result = new HashMap<>();
+            result.put("captchaText",captchaText);
+            result.put("captchaKey", captchaKey);
+            result.put("captchaImage", base64Image);
+            return ResponseBo.ok(result);
+        } catch (Exception e) {
+//            return ResponseBo.error("验证码生成失败");
+            throw new RuntimeException("验证码生成失败");
+        }
+    }
+
     @PostMapping("/login")
     public ResponseBo login(@RequestBody SysUser user, HttpServletRequest request) {
+        String jcaptcha = redisUtil.get(user.getCaptchaKey());
+        if(StringUtils.isBlank(jcaptcha)){
+            return ResponseBo.error("验证码已过期！");
+
+        }else if (!user.getCaptcha().equals(jcaptcha.toLowerCase())) {
+            return ResponseBo.error("验证码不正确！");
+        }
         String username= user.getUsername();
         SysUser sysUser = sysUserService.findByUserName(username);
         SysLoginLog loginLog=new SysLoginLog();

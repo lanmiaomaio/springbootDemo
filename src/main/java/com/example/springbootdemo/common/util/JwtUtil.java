@@ -7,16 +7,24 @@ import com.auth0.jwt.interfaces.DecodedJWT;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.example.springbootdemo.model.system.SysUser;
 import com.example.springbootdemo.service.system.ISysUserService;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
 import javax.servlet.http.HttpServletRequest;
+import java.security.Key;
+import java.util.Base64;
 import java.util.Date;
 
+import static javax.crypto.Cipher.SECRET_KEY;
+
 public class JwtUtil {
-    @Autowired
-    private static ISysUserService sysUserService;
+
+    private static String secretKey="YeBKWjCIxK2viK9lO1J0Vvtr5Yy8C1w4P8bL+lNvcQ8=";
 
     private static final long EXPIRE_TIME =  60*60*1000;  //过期时间1小时
     //生成token
@@ -26,7 +34,7 @@ public class JwtUtil {
         token = JWT.create().withAudience(sysUser.getId()) // 将 userId 保存到 token 里面
                 .withClaim("username",sysUser.getUsername())
                 .withExpiresAt(date) //1小时后token过期
-                .sign(Algorithm.HMAC256(sysUser.getPassword())); // 以 password 作为 token 的密钥
+                .sign(Algorithm.HMAC256(secretKey)); // 以 password 作为 token 的密钥
         return token;
     }
 
@@ -34,7 +42,7 @@ public class JwtUtil {
     public static String getCurrentUserId() {
         try {
             HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
-            String token = request.getHeader("token");
+            String token = request.getHeader("Authorization").replace("Bearer ", "");
             if (!StringUtils.isEmpty(token)) {
                 String userId = JWT.decode(token).getAudience().get(0);
                 return userId;
@@ -48,7 +56,7 @@ public class JwtUtil {
     public static String getCurrentUserName() {
         try {
             HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
-            String token = request.getHeader("token");
+            String token = request.getHeader("Authorization").replace("Bearer ", "");
             if (!StringUtils.isEmpty(token)) {
                 String username = JWT.decode(token).getClaim("username").asString();
                 return username;
@@ -59,23 +67,28 @@ public class JwtUtil {
         return null;
     }
 
+    public static boolean isExpiresAt(String token) {
+        try {
+            // 处理Bearer前缀
+            String cleanedToken = token.replace("Bearer ", "");
 
-    public int isExpiresAt() {
-        String userId = JwtUtil.getCurrentUserId();
-        if (org.apache.commons.lang3.StringUtils.isNotBlank(userId)) {
-            SysUser sysUser = sysUserService.getById(userId);
-            JWTVerifier jwtVerifier = JWT.require(Algorithm.HMAC256(sysUser.getPassword())).build();
-            //校对token
-            DecodedJWT decodedJWT = JWT.decode(JwtUtil.getToken(sysUser));
-            Date expirationDate = decodedJWT.getExpiresAt();
+            // 用com.auth0.jwt解析（与生成用同一个库）
+            DecodedJWT jwt = JWT.require(Algorithm.HMAC256(secretKey))
+                    .build()
+                    .verify(cleanedToken);
 
-            if (expirationDate.before(new Date())) {
-                //token过期
-                return 1;
-            }
-        }else{
-            return 2;
+            // 校验过期时间
+            return jwt.getExpiresAt().before(new Date());
+        } catch (ExpiredJwtException e) {
+            return true; // Token已过期
+        } catch (Exception e) {
+            e.printStackTrace();
+            return true; // 解析失败/签名不匹配
         }
-        return 3;
+    }
+
+    public static Key getSigningKey(String password) {
+        byte[] keyBytes = Base64.getDecoder().decode(password);
+        return Keys.hmacShaKeyFor(keyBytes);
     }
 }

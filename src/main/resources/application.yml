@@ -14,12 +14,17 @@ spring:
     time-zone: GMT+8
     serialization:
       write-dates-as-timestamps: false
-  rabbitmq:
-    host: 127.0.0.1
-    port: 5672
-    username: guest
-    password: guest
-    virtual-host: /h  #虚拟主机
+  redis:
+    host: localhost
+    port: 6379
+    password:  # 如果没有密码则省略此配置项
+    timeout: 60000
+  servlet:
+    multipart:
+      max-file-size: 2GB
+      max-request-size: 2GB
+    session:
+      tracking-modes: cookie # 仅使用Cooki
   activiti:
     #默认为false,activiti在启动的时候会对比数据库中的表中保存的版本，如果不一样会抛出异常
     # true activiti会对数据库中的表进行更新操作，如果表不存在，则自动创建
@@ -40,3 +45,12 @@ mybatis-plus:
       logic-not-delete-value: 1
       # ???
       logic-delete-value: 0
+  # 自定义配置
+video:
+  input-path: D:\\upload\\  # 原始视频上传目录
+  output-path: D:\\hls\\   # 生成的m3u8和ts文件存储目录
+  ffmpeg-path: D:\\Tools\\xunlei\\ffmpeg-7.1.1-full_build\\ffmpeg-7.1.1-full_build\\bin\\ffmpeg.exe    # 若环境变量未配置，写绝对路径如 C:\ffmpeg\bin\ffmpeg.exe
+wx:
+  appid: wx3717981887d02409
+  appsecret: 6128f4544f8a07cfc061974335348388
+  redirecturi: https://lymphomatoid-quadrennially-cyndi.ngrok-free.dev/front/wx/callback

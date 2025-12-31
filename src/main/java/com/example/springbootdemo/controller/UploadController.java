@@ -1,27 +1,34 @@
 package com.example.springbootdemo.controller;
 
+import com.example.springbootdemo.common.FFmpegUtils;
 import com.example.springbootdemo.common.pojo.ResponseBo;
 import com.example.springbootdemo.model.ProjectFile;
 import com.example.springbootdemo.service.IProjectFileService;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.annotation.Resource;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletResponse;
 import java.io.*;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 @RestController
 public class UploadController {
 
     @Autowired
     private IProjectFileService projectFileService;
+
+    @Resource
+    private FFmpegUtils ffmpegUtils;
 
     @PostMapping("/upload")
     public ResponseBo upload(MultipartFile file) {
@@ -47,12 +54,12 @@ public class UploadController {
         try {
             // ↓ 上传文件
             file.transferTo(dist);
+            return ResponseBo.ok(0,"上传成功",fileName);
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseBo.error("上传失败");
         }
 
-        return ResponseBo.ok(0,"上传成功",fileName);
     }
 
 
@@ -147,5 +154,53 @@ public class UploadController {
         byte[] byt= IOUtils.toByteArray(inputstream);
         return ResponseBo.ok(0,"上传成功",byt);
     }
+
+
+
+    @Value("${video.input-path}")
+    private String inputPath;
+
+    /**
+     * 上传视频并生成m3u8文件
+     * @param file 上传的视频文件（mp4、avi等）
+     * @return m3u8文件访问地址
+     */
+    @PostMapping("/generateM3u8")
+    public ResponseBo generateM3u8(@RequestParam("file") MultipartFile file) {
+        try {
+            // 1. 校验文件
+            if (file.isEmpty()) {
+                return ResponseBo.error("请上传有效视频文件");
+            }
+            String originalFilename = file.getOriginalFilename();
+            if (originalFilename == null || !originalFilename.matches("^.+\\.(mp4|avi|mov|mkv)$")) {
+                return ResponseBo.error("仅支持mp4/avi/mov/mkv格式视频");
+            }
+
+            // 2. 保存原始视频到本地
+            String uniqueFileName = UUID.randomUUID().toString().replace("-", "") + "_" + originalFilename;
+            String inputVideoPath = inputPath + File.separator + uniqueFileName;
+            File inputFile = new File(inputVideoPath);
+            FileUtils.copyInputStreamToFile(file.getInputStream(), inputFile);
+
+            // 3. 调用FFmpeg生成m3u8（分片时长10秒）
+            String m3u8FileName = uniqueFileName.substring(0, uniqueFileName.lastIndexOf(".")) + ".m3u8";
+            String uuid=ffmpegUtils.generateM3u8(inputVideoPath, m3u8FileName, 10,false );
+
+            System.out.println( "m3u8生成成功，访问地址：" + m3u8FileName);
+
+            Map map=new HashMap();
+            map.put("uuid",uuid);
+            map.put("m3u8FileName",m3u8FileName);
+            return ResponseBo.ok(0,"上传成功",map);
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            return ResponseBo.error("生成失败：" + e.getMessage());
+        }
+
+
+    }
+
 
 }
